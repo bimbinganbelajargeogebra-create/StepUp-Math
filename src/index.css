@@ -1,0 +1,191 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.light {
+  color-scheme: light;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s ease-out;
+}
+
+.katex {
+  font-size: 1.1em;
+  text-rendering: auto;
+}
+
+.katex-display {
+  margin: 0.5em 0 !important;
+}
+
+/* KaTeX formula colors in dark mode (default for dark UI components) */
+.dark .katex,
+.dark .katex-html,
+.dark .katex-display {
+  color: #f8fafc;
+}
+
+.dark .katex .frac-line {
+  border-bottom-color: #cbd5e1 !important;
+}
+
+.dark .katex-error {
+  color: #fca5a5;
+}
+
+/* KaTeX in white paper containers & printable sheets MUST ALWAYS be crisp jet black */
+.kumon-print-sheet,
+.student-report-print-sheet,
+.bg-white .katex,
+.bg-white .katex-html,
+.bg-white .katex-display,
+.bg-white .katex *,
+.kumon-print-sheet .katex,
+.kumon-print-sheet .katex-html,
+.kumon-print-sheet .katex-display,
+.kumon-print-sheet .katex *,
+.student-report-print-sheet .katex,
+.student-report-print-sheet .katex-html,
+.student-report-print-sheet .katex-display,
+.student-report-print-sheet .katex *,
+.dark .kumon-print-sheet .katex,
+.dark .kumon-print-sheet .katex-html,
+.dark .kumon-print-sheet .katex-display,
+.dark .kumon-print-sheet .katex *,
+.dark .student-report-print-sheet .katex,
+.dark .student-report-print-sheet .katex-html,
+.dark .student-report-print-sheet .katex-display,
+.dark .student-report-print-sheet .katex * {
+  color: #000000 !important;
+}
+
+.kumon-print-sheet .katex .frac-line,
+.student-report-print-sheet .katex .frac-line,
+.bg-white .katex .frac-line,
+.dark .kumon-print-sheet .katex .frac-line,
+.dark .student-report-print-sheet .katex .frac-line {
+  border-bottom-color: #000000 !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.2);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.7);
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 6mm 8mm 6mm 8mm;
+  }
+  *, *::before, *::after {
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .kumon-print-sheet, .student-report-print-sheet {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .kumon-print-sheet * {
+    color: #000000 !important;
+  }
+  .kumon-print-sheet .text-white {
+    color: #ffffff !important;
+  }
+  .kumon-print-sheet .bg-black {
+    background-color: #000000 !important;
+  }
+  .kumon-print-sheet .bg-slate-50,
+  .kumon-print-sheet .bg-slate-100 {
+    background-color: #f8fafc !important;
+  }
+  .kumon-print-sheet .border-black {
+    border-color: #000000 !important;
+  }
+  .kumon-print-sheet .katex {
+    font-size: 1.05em !important;
+    color: #000000 !important;
+  }
+  .print-page-break {
+    page-break-before: always;
+    break-before: page;
+  }
+}
+

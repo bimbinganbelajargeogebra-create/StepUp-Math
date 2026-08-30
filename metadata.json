@@ -1,0 +1,6 @@
+{
+  "name": "StepUp Math",
+  "description": "Aplikasi belajar mandiri matematika berjenjang komprehensif mulai dari level 6A sampai M dengan pretest penempatan level, latihan harian bertahap, dan penyimpanan progres lokal di perangkat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
