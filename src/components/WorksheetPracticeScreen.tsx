@@ -14,7 +14,12 @@ import {
   Check,
   X,
   Sun,
-  Moon
+  Moon,
+  Maximize2,
+  Minimize2,
+  Focus,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { KumonLevelId, Question, WorksheetSessionResult } from '../types';
@@ -54,6 +59,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
   }>({});
 
   const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [finalResult, setFinalResult] = useState<WorksheetSessionResult | null>(null);
@@ -315,38 +321,76 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
     );
   }
 
+  // Toggle focus mode with keyboard shortcut 'f' or 'F' (when not typing in text input)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.key === 'f' || e.key === 'F') && 
+        !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        setIsFocusMode((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#F1F5F9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col justify-between font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-200">
+    <div className={`min-h-screen ${isFocusMode ? 'bg-slate-900 dark:bg-slate-950' : 'bg-[#F1F5F9] dark:bg-slate-950'} text-slate-800 dark:text-slate-100 flex flex-col justify-between font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-300`}>
       {/* Header Bar */}
-      <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 flex items-center justify-between shadow-xs transition-colors duration-200">
-        <div className="flex items-center gap-4 sm:gap-6">
-          <div className="flex items-center gap-3">
+      <header className={`${isFocusMode ? 'h-14 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6' : 'h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8'} flex items-center justify-between shadow-xs transition-all duration-300 z-10`}>
+        <div className="flex items-center gap-3 sm:gap-6">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <button
               type="button"
+              id="practice-exit-btn"
               onClick={onExit}
-              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+              className={`px-3 py-1.5 ${isFocusMode ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'} text-xs font-bold rounded-lg transition-colors cursor-pointer`}
             >
               Keluar
             </button>
+            
             <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Set Latihan</span>
-              <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
-                Level {levelId} • Lembar #{worksheetNum} ({levelInfo.name})
+              {!isFocusMode && (
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Set Latihan</span>
+              )}
+              <span className={`text-xs sm:text-sm font-bold ${isFocusMode ? 'text-indigo-400' : 'text-slate-800 dark:text-slate-100'}`}>
+                Level {levelId} • Lembar #{worksheetNum} {!isFocusMode && `(${levelInfo.name})`}
               </span>
             </div>
           </div>
 
-          <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 hidden md:block"></div>
+          {!isFocusMode && (
+            <>
+              <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 hidden md:block"></div>
 
-          <div className="hidden md:flex flex-col">
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Status Akses</span>
-            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">STEPUP-VERIFIED</span>
-          </div>
+              <div className="hidden md:flex flex-col">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Status Akses</span>
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">STEPUP-VERIFIED</span>
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* Dark / Light Mode Toggle Button */}
-          {onToggleTheme && (
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Focus Mode Toggle Button */}
+          <button
+            id="focus-mode-toggle-btn"
+            type="button"
+            onClick={() => setIsFocusMode(!isFocusMode)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs ${
+              isFocusMode
+                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 ring-2 ring-amber-400/50 shadow-amber-500/20'
+                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+            }`}
+            title="Mode Fokus: Sembunyikan elemen pengganggu untuk konsentrasi penuh (Tekan 'F')"
+          >
+            <Focus className={`w-3.5 h-3.5 ${isFocusMode ? 'text-slate-950 animate-pulse' : 'text-indigo-500'}`} />
+            <span className="hidden xs:inline">{isFocusMode ? 'Fokus Aktif' : 'Mode Fokus'}</span>
+          </button>
+
+          {/* Dark / Light Mode Toggle Button (Hidden in focus mode if user wants zen) */}
+          {onToggleTheme && !isFocusMode && (
             <button
               id="practice-theme-toggle"
               type="button"
@@ -362,16 +406,28 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
             </button>
           )}
 
-          <div className="text-right">
-            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Waktu Berjalan</p>
-            <p className="text-base sm:text-lg font-mono font-bold text-slate-800 dark:text-slate-100">{formatTime(secondsElapsed)}</p>
+          {/* Timer Display */}
+          <div className={`text-right ${isFocusMode ? 'px-2 py-1 bg-slate-900 rounded-lg border border-slate-800' : ''}`}>
+            {!isFocusMode && (
+              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Waktu Berjalan</p>
+            )}
+            <p className={`font-mono font-bold ${isFocusMode ? 'text-xs sm:text-sm text-emerald-400 flex items-center gap-1' : 'text-base sm:text-lg text-slate-800 dark:text-slate-100'}`}>
+              {isFocusMode && <Clock className="w-3 h-3 text-emerald-400" />}
+              {formatTime(secondsElapsed)}
+            </p>
           </div>
 
           {/* Scratchpad Button */}
           <button
             type="button"
+            id="practice-scratchpad-btn"
             onClick={() => setIsScratchpadOpen(true)}
-            className="flex items-center gap-1 px-3 py-2 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold rounded-lg border border-indigo-200 dark:border-indigo-800 text-xs transition-colors cursor-pointer shadow-xs"
+            className={`flex items-center gap-1 px-3 py-2 ${
+              isFocusMode
+                ? 'bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700'
+                : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+            } font-bold rounded-lg text-xs transition-colors cursor-pointer shadow-xs`}
+            title="Buka Papan Coretan / Scratchpad"
           >
             <PenTool className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Coretan</span>
@@ -380,15 +436,30 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
       </header>
 
       {/* Main Worksheet Card */}
-      <main className="flex-1 p-3 sm:p-6 lg:p-8 flex items-center justify-center">
-        <div className="w-full max-w-2xl bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-colors duration-200">
+      <main className={`flex-1 p-3 sm:p-6 lg:p-8 flex items-center justify-center transition-all duration-300 ${isFocusMode ? 'max-w-4xl mx-auto w-full' : ''}`}>
+        <div className={`w-full max-w-2xl bg-white dark:bg-slate-900 shadow-xl ${isFocusMode ? 'shadow-2xl shadow-indigo-950/50 border-2 border-indigo-500/30 ring-4 ring-indigo-500/10' : 'shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800'} rounded-2xl flex flex-col overflow-hidden transition-all duration-200`}>
+          {/* Focus Mode Zen Banner */}
+          {isFocusMode && (
+            <div className="bg-indigo-950/60 border-b border-indigo-800/40 px-5 py-2 flex items-center justify-between text-xs text-indigo-300">
+              <div className="flex items-center gap-1.5 font-semibold">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Mode Fokus Aktif — Bebas Gangguan</span>
+              </div>
+              <span className="text-[11px] text-indigo-400/80 font-mono">
+                Soal #{currentIndex + 1} / {questions.length}
+              </span>
+            </div>
+          )}
+
           {/* Card Top Header */}
-          <div className="bg-slate-50 dark:bg-slate-800/80 p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+          <div className={`${isFocusMode ? 'bg-slate-50/50 dark:bg-slate-800/40 p-4 sm:p-5' : 'bg-slate-50 dark:bg-slate-800/80 p-5 sm:p-6'} border-b border-slate-100 dark:border-slate-800 flex justify-between items-center transition-all`}>
             <div>
               <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">
                 Lembar Kerja {levelId} - Soal #{currentIndex + 1}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Kerjakan perhitungan matematika dengan cepat dan teliti.</p>
+              {!isFocusMode && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">Kerjakan perhitungan matematika dengan cepat dan teliti.</p>
+              )}
             </div>
             <span className="text-xs font-bold bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-2xs">
               Soal {currentIndex + 1} dari {questions.length}
@@ -396,7 +467,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
           </div>
 
           {/* Card Body / Exercise Area */}
-          <div className="p-6 sm:p-8 space-y-6">
+          <div className={`${isFocusMode ? 'p-5 sm:p-8 space-y-5' : 'p-6 sm:p-8 space-y-6'}`}>
             {/* Visual Dots if applicable */}
             {currentQ.visualItems?.type === 'dots' && (
               <div className="flex flex-wrap items-center justify-center gap-2 max-w-sm mx-auto p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
@@ -413,17 +484,17 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
             {/* Prompt & Math Formula Rendering */}
             <div className="text-center py-2 space-y-3">
-              <h2 className="text-lg sm:text-xl font-medium text-slate-800 dark:text-slate-100 tracking-normal">
+              <h2 className={`font-medium text-slate-800 dark:text-slate-100 tracking-normal ${isFocusMode ? 'text-xl sm:text-2xl font-semibold' : 'text-lg sm:text-xl'}`}>
                 {currentQ.prompt}
               </h2>
 
               {currentQ.mathFormula ? (
-                <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 rounded-2xl overflow-x-auto overflow-y-visible flex items-center justify-center max-w-xl mx-auto shadow-2xs">
-                  <KaTeXMath math={currentQ.mathFormula} block className="text-2xl sm:text-4xl text-slate-900 dark:text-white font-semibold" />
+                <div className={`p-4 sm:p-6 ${isFocusMode ? 'bg-slate-50 dark:bg-slate-800/90 border-2 border-indigo-200/50 dark:border-indigo-900/50 shadow-md' : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 shadow-2xs'} rounded-2xl overflow-x-auto overflow-y-visible flex items-center justify-center max-w-xl mx-auto`}>
+                  <KaTeXMath math={currentQ.mathFormula} block className={`${isFocusMode ? 'text-3xl sm:text-5xl' : 'text-2xl sm:text-4xl'} text-slate-900 dark:text-white font-semibold`} />
                 </div>
               ) : currentQ.isLatex ? (
-                <div className="p-3 sm:p-5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 rounded-2xl overflow-x-auto overflow-y-visible flex items-center justify-center max-w-xl mx-auto shadow-2xs">
-                  <KaTeXMath math={currentQ.prompt} block className="text-2xl sm:text-3xl text-slate-900 dark:text-white font-medium" />
+                <div className={`p-3 sm:p-5 ${isFocusMode ? 'bg-slate-50 dark:bg-slate-800/90 border-2 border-indigo-200/50 dark:border-indigo-900/50 shadow-md' : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 shadow-2xs'} rounded-2xl overflow-x-auto overflow-y-visible flex items-center justify-center max-w-xl mx-auto`}>
+                  <KaTeXMath math={currentQ.prompt} block className={`${isFocusMode ? 'text-2xl sm:text-4xl' : 'text-2xl sm:text-3xl'} text-slate-900 dark:text-white font-medium`} />
                 </div>
               ) : null}
             </div>
@@ -599,18 +670,20 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
         </div>
       </main>
 
-      {/* Professional Status Footer */}
-      <footer className="h-10 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide transition-colors duration-200">
-        <div className="flex items-center gap-4 uppercase">
-          <span>Penyimpanan Lokal: Aktif</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-slate-300">Level {levelId} • Target {levelInfo.standardTimeMinutes} Menit</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-          <span className="text-slate-300 uppercase tracking-wider text-[10px]">SISTEM AKTIF</span>
-        </div>
-      </footer>
+      {/* Professional Status Footer (Hidden in Focus Mode for Zero Distraction) */}
+      {!isFocusMode && (
+        <footer className="h-10 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide transition-colors duration-200">
+          <div className="flex items-center gap-4 uppercase">
+            <span>Penyimpanan Lokal: Aktif</span>
+            <span className="text-slate-500">|</span>
+            <span className="text-slate-300">Level {levelId} • Target {levelInfo.standardTimeMinutes} Menit</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+            <span className="text-slate-300 uppercase tracking-wider text-[10px]">SISTEM AKTIF</span>
+          </div>
+        </footer>
+      )}
 
       {/* Scratchpad Whiteboard */}
       <Scratchpad isOpen={isScratchpadOpen} onClose={() => setIsScratchpadOpen(false)} />
