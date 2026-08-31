@@ -19,7 +19,13 @@ import {
   Minimize2,
   Focus,
   Eye,
-  EyeOff
+  EyeOff,
+  BookOpen,
+  Download,
+  Printer,
+  ChevronDown,
+  ChevronUp,
+  FileText
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { KumonLevelId, Question, WorksheetSessionResult } from '../types';
@@ -29,6 +35,7 @@ import { KaTeXMath, MathText } from './KaTeXMath';
 import { Scratchpad } from './Scratchpad';
 import { VirtualMathPad } from './VirtualMathPad';
 import { saveSessionResult, AppTheme } from '../utils/storage';
+import { KumonWorksheetPrintModal, WorksheetPrintMode } from './KumonWorksheetPrintModal';
 
 interface WorksheetPracticeScreenProps {
   levelId: KumonLevelId;
@@ -60,6 +67,13 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
   const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [showSolutionDuringPractice, setShowSolutionDuringPractice] = useState(false);
+  const [expandedReviewQuestionId, setExpandedReviewQuestionId] = useState<string | null>(null);
+  
+  // Print & Download modal state
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [printModalMode, setPrintModalMode] = useState<WorksheetPrintMode>('full_solutions');
+
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [finalResult, setFinalResult] = useState<WorksheetSessionResult | null>(null);
@@ -80,6 +94,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
     setAnswersState({});
     setSecondsElapsed(0);
     setIsCompleted(false);
+    setShowSolutionDuringPractice(false);
 
     timerRef.current = setInterval(() => {
       setSecondsElapsed((prev) => prev + 1);
@@ -118,83 +133,82 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
     const cleanCorrect = normalizeAnswer(currentQ.correctAnswer);
 
     let isMatch = cleanUser === cleanCorrect;
-    if (!isMatch && currentQ.acceptableAnswers) {
-      isMatch = currentQ.acceptableAnswers.some((ans) => normalizeAnswer(ans) === cleanUser);
+
+    // Numerical loose matching
+    const numUser = parseFloat(cleanUser.replace(',', '.'));
+    const numCorrect = parseFloat(cleanCorrect.replace(',', '.'));
+    if (!isNaN(numUser) && !isNaN(numCorrect) && Math.abs(numUser - numCorrect) < 0.0001) {
+      isMatch = true;
     }
 
-    const updated = {
-      ...answersState,
+    setAnswersState((prev) => ({
+      ...prev,
       [currentQ.id]: {
         userAnswer: userAns,
         isCorrect: isMatch,
         submitted: true
       }
-    };
-    setAnswersState(updated);
-
-    // Audio cue or small haptic effect can be handled visually
+    }));
   };
 
   const handleNextQuestion = () => {
+    setShowSolutionDuringPractice(false);
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      const nextQ = questions[currentIndex + 1];
-      setInputVal(answersState[nextQ.id]?.userAnswer || '');
+      setCurrentIndex((prev) => prev + 1);
+      setInputVal(answersState[questions[currentIndex + 1]?.id]?.userAnswer || '');
     } else {
-      completeSession();
+      handleCompleteWorksheet();
     }
   };
 
-  const completeSession = () => {
+  const handleCompleteWorksheet = () => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     let correctCount = 0;
-    const recordedAnswers = questions.map((q) => {
-      const state = answersState[q.id];
-      const isCor = !!state?.isCorrect;
-      if (isCor) correctCount++;
-      return {
-        questionId: q.id,
-        userAnswer: state?.userAnswer || '',
-        isCorrect: isCor,
-        correctAnswer: q.correctAnswer
-      };
+    questions.forEach((q) => {
+      if (answersState[q.id]?.isCorrect) {
+        correctCount++;
+      }
     });
 
     const score = Math.round((correctCount / questions.length) * 100);
     const isMastered = score >= 90 && secondsElapsed <= standardTimeSec * 1.5;
 
+    const answersList = questions.map((q) => ({
+      questionId: q.id,
+      userAnswer: answersState[q.id]?.userAnswer || '',
+      isCorrect: answersState[q.id]?.isCorrect || false,
+      correctAnswer: q.correctAnswer
+    }));
+
     const result: WorksheetSessionResult = {
-      id: `${levelId}-w${worksheetNum}-${Date.now()}`,
+      id: `session-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       levelId,
       worksheetNum,
       timestamp: Date.now(),
-      totalQuestions: questions.length,
-      correctCount,
       score,
       timeSpentSeconds: secondsElapsed,
       standardTimeSeconds: standardTimeSec,
       isMastered,
-      answers: recordedAnswers
+      totalQuestions: questions.length,
+      correctCount,
+      answers: answersList
     };
 
-    const res = saveSessionResult(result);
+    const unlock = saveSessionResult(result);
     setFinalResult(result);
-    setUnlockInfo({
-      isUnlocked: res.isNewLevelUnlocked,
-      nextLevel: res.unlockedLevelId
-    });
+    setUnlockInfo(unlock);
     setIsCompleted(true);
 
     if (score >= 80) {
       try {
         confetti({
-          particleCount: 100,
-          spread: 80,
+          particleCount: 80,
+          spread: 70,
           origin: { y: 0.6 }
         });
-      } catch {
-        // Confetti fallback
+      } catch (e) {
+        // Safe fallback
       }
     }
   };
@@ -210,11 +224,11 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
     );
   }
 
-  // Completion summary screen
+  // Completion summary screen with Comprehensive Solutions Review & Download
   if (isCompleted && finalResult) {
     return (
-      <div className="min-h-screen bg-[#F1F5F9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex items-center justify-center p-3 sm:p-6 font-sans transition-colors duration-200">
-        <div className="w-full max-w-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-200 dark:border-slate-800">
+      <div className="min-h-screen bg-[#F1F5F9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex items-center justify-center p-3 sm:p-6 font-sans transition-colors duration-200 py-10">
+        <div className="w-full max-w-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-200 dark:border-slate-800">
           {/* Top banner */}
           <div className="bg-slate-900 p-6 text-white text-center border-b border-slate-800">
             <div className="w-14 h-14 bg-indigo-600 rounded-2xl mx-auto mb-2 flex items-center justify-center shadow-lg shadow-indigo-600/30 text-white font-bold text-2xl">
@@ -222,11 +236,11 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
             </div>
             <h2 className="text-2xl font-extrabold tracking-tight text-white">Lembar Kerja Selesai!</h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Level {levelId} • Lembar Kerja #{worksheetNum}
+              Level {levelId} • Lembar Kerja #{worksheetNum} • {levelInfo.name}
             </p>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-6 sm:p-8 space-y-6">
             {/* Score & Time cards */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 rounded-xl text-center">
@@ -253,7 +267,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
             {/* Unlock Notification if new level unlocked */}
             {unlockInfo.isUnlocked && unlockInfo.nextLevel && (
               <div className="p-4 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
                   ★
                 </div>
                 <div>
@@ -282,12 +296,137 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
               </p>
             </div>
 
-            {/* Action buttons */}
-            <div className="space-y-2.5">
+            {/* DOWNLOAD OPTIONS & ACTION BUTTONS */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Download className="w-3.5 h-3.5 text-indigo-500" />
+                  Pilihan Unduh &amp; Cetak Lembar Ini
+                </span>
+                <span className="text-[10px] text-slate-400">Format A4 Bersih</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  id="download-with-explanation-btn"
+                  onClick={() => {
+                    setPrintModalMode('full_solutions');
+                    setIsPrintModalOpen(true);
+                  }}
+                  className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95"
+                >
+                  <BookOpen className="w-4 h-4 text-amber-300" />
+                  <span>Unduh dengan Pembahasan Rinci</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="download-questions-only-btn"
+                  onClick={() => {
+                    setPrintModalMode('questions_only');
+                    setIsPrintModalOpen(true);
+                  }}
+                  className="p-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl text-xs border border-slate-300 dark:border-slate-600 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+                >
+                  <FileText className="w-4 h-4 text-indigo-500" />
+                  <span>Unduh Soal Latihan Saja</span>
+                </button>
+              </div>
+            </div>
+
+            {/* DETAILED SOLUTIONS & EXPLANATIONS REVIEW SECTION */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Tinjau Pembahasan Semua Soal (1 – {questions.length})</span>
+                </h3>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Klik nomor soal untuk melihat detail
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {questions.map((q, idx) => {
+                  const state = answersState[q.id];
+                  const isExpanded = expandedReviewQuestionId === q.id || (!expandedReviewQuestionId && idx === 0);
+
+                  return (
+                    <div 
+                      key={q.id}
+                      className="border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/40 overflow-hidden"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setExpandedReviewQuestionId(isExpanded ? null : q.id)}
+                        className="w-full p-3 flex items-center justify-between text-left hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
+                            state?.isCorrect ? 'bg-emerald-600' : 'bg-rose-600'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-xs sm:max-w-md">
+                            {q.prompt}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                            Kunci: {q.correctAnswer}
+                          </span>
+                          {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                          {q.mathFormula && (
+                            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-center border border-slate-200 dark:border-slate-700">
+                              <KaTeXMath math={q.mathFormula} block className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white" />
+                            </div>
+                          )}
+
+                          {/* Step-by-Step Breakdown */}
+                          <div className="space-y-1.5">
+                            <h5 className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-amber-500" />
+                              Langkah Penyelesaian Rinci:
+                            </h5>
+                            <div className="space-y-1">
+                              {(q.stepByStepSolution || []).map((step, sIdx) => (
+                                <div 
+                                  key={sIdx}
+                                  className="p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg text-xs text-slate-700 dark:text-slate-200 border-l-2 border-indigo-600"
+                                >
+                                  <MathText text={step} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {q.explanation && (
+                            <div className="text-xs text-slate-600 dark:text-slate-300 p-2.5 bg-indigo-50/50 dark:bg-indigo-950/30 rounded-lg border border-indigo-100 dark:border-indigo-900">
+                              <strong className="text-indigo-900 dark:text-indigo-200">Konsep:</strong> <MathText text={q.explanation} />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Navigation & Restart actions */}
+            <div className="space-y-2.5 pt-2">
               <button
                 type="button"
+                id="finish-return-level-menu-btn"
                 onClick={() => onFinish(finalResult, unlockInfo.isUnlocked, unlockInfo.nextLevel)}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
               >
                 <span>Kembali ke Menu Level</span>
                 <ChevronRight className="w-4 h-4" />
@@ -304,6 +443,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                   setAnswersState({});
                   setSecondsElapsed(0);
                   setIsCompleted(false);
+                  setShowSolutionDuringPractice(false);
                   if (timerRef.current) clearInterval(timerRef.current);
                   timerRef.current = setInterval(() => {
                     setSecondsElapsed((prev) => prev + 1);
@@ -317,6 +457,16 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
             </div>
           </div>
         </div>
+
+        {/* Modal for PDF/HTML Print and Download */}
+        {isPrintModalOpen && (
+          <KumonWorksheetPrintModal
+            initialLevelId={levelId}
+            initialWorksheetNum={worksheetNum}
+            initialMode={printModalMode}
+            onClose={() => setIsPrintModalOpen(false)}
+          />
+        )}
       </div>
     );
   }
@@ -373,6 +523,21 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Quick Print & Download Trigger */}
+          <button
+            id="practice-quick-print-btn"
+            type="button"
+            onClick={() => {
+              setPrintModalMode('questions_only');
+              setIsPrintModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-xs"
+            title="Cetak atau Unduh Lembar Kerja Ini (PDF / Dokumen)"
+          >
+            <Printer className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="hidden sm:inline">Cetak/Unduh</span>
+          </button>
+
           {/* Focus Mode Toggle Button */}
           <button
             id="focus-mode-toggle-btn"
@@ -583,37 +748,71 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
             {/* Answer feedback and explanation */}
             {currentState?.submitted && (
-              <div className={`p-4 rounded-xl border text-sm max-w-md mx-auto ${
+              <div className={`p-4 rounded-xl border text-sm max-w-md mx-auto space-y-3 ${
                 currentState.isCorrect
                   ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
                   : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200'
               }`}>
-                <div className="flex items-center gap-2 font-bold text-sm mb-1">
-                  {currentState.isCorrect ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span>Jawaban Benar! (100)</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                      <span>Jawaban Belum Tepat</span>
-                    </>
-                  )}
+                <div className="flex items-center justify-between font-bold text-sm">
+                  <div className="flex items-center gap-2">
+                    {currentState.isCorrect ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>Jawaban Benar! (100)</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                        <span>Jawaban Belum Tepat</span>
+                      </>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowSolutionDuringPractice(!showSolutionDuringPractice)}
+                    className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>{showSolutionDuringPractice ? 'Tutup Pembahasan' : 'Lihat Pembahasan Lengkap'}</span>
+                  </button>
                 </div>
 
-                {!currentState.isCorrect && (
-                  <div className="mt-2 space-y-1.5 text-xs">
-                    <p>
-                      Kunci Jawaban:{' '}
-                      <strong className="font-mono bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300">
-                        {currentQ.correctAnswer}
-                      </strong>
-                    </p>
-                    <div className="text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800/90 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 leading-relaxed">
-                      💡 <strong className="text-slate-800 dark:text-slate-100">Pembahasan:</strong>{' '}
-                      <MathText text={currentQ.explanation} />
+                {!currentState.isCorrect && !showSolutionDuringPractice && (
+                  <div className="text-xs">
+                    Kunci Jawaban:{' '}
+                    <strong className="font-mono bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300">
+                      {currentQ.correctAnswer}
+                    </strong>
+                  </div>
+                )}
+
+                {/* Expandable Step-by-Step Solution Breakdown during practice */}
+                {showSolutionDuringPractice && (
+                  <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5 text-xs text-slate-800 dark:text-slate-200 shadow-xs">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider text-[10px] flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-500" />
+                        Langkah Pengerjaan Rinci:
+                      </span>
+                      <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-xs">
+                        Jawaban = {currentQ.correctAnswer}
+                      </span>
                     </div>
+
+                    <div className="space-y-1">
+                      {(currentQ.stepByStepSolution || []).map((step, sIdx) => (
+                        <div key={sIdx} className="p-2 bg-slate-50 dark:bg-slate-800/60 rounded-md border-l-2 border-indigo-500 text-[11px]">
+                          <MathText text={step} />
+                        </div>
+                      ))}
+                    </div>
+
+                    {currentQ.explanation && (
+                      <div className="text-[11px] text-slate-600 dark:text-slate-300 pt-1 border-t border-dashed border-slate-200 dark:border-slate-700">
+                        <strong>Penjelasan Konsep:</strong> <MathText text={currentQ.explanation} />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -640,6 +839,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                     key={q.id}
                     type="button"
                     onClick={() => {
+                      setShowSolutionDuringPractice(false);
                       setCurrentIndex(idx);
                       setInputVal(answersState[q.id]?.userAnswer || '');
                     }}
@@ -687,6 +887,16 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
       {/* Scratchpad Whiteboard */}
       <Scratchpad isOpen={isScratchpadOpen} onClose={() => setIsScratchpadOpen(false)} />
+
+      {/* Print & Download Modal */}
+      {isPrintModalOpen && (
+        <KumonWorksheetPrintModal
+          initialLevelId={levelId}
+          initialWorksheetNum={worksheetNum}
+          initialMode={printModalMode}
+          onClose={() => setIsPrintModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

@@ -84,12 +84,48 @@ export const DailyProgressChart: React.FC<DailyProgressChartProps> = ({
   className = '',
 }) => {
   const [timeRange, setTimeRange] = useState<'7days' | '14days' | '30days' | 'all'>('7days');
-  const [useSampleData, setUseSampleData] = useState<boolean>(sessions.length === 0);
+  // Always default to real data. Only use sample data if explicitly turned on or when 0 sessions and user wants to preview
+  const [useSampleData, setUseSampleData] = useState<boolean>(false);
+
+  const hasRealData = sessions.length > 0;
+  const isDisplayingReal = hasRealData && !useSampleData;
 
   // Group actual sessions by date
   const processedDailyData = useMemo(() => {
-    if (useSampleData || sessions.length === 0) {
+    if (!hasRealData && useSampleData) {
       return generateSampleDailyData();
+    }
+
+    if (!hasRealData) {
+      // Return clean real empty 7-day range
+      const emptyPoints: DailyDataPoint[] = [];
+      const now = new Date();
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+      const fullDayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+      let daysCount = 7;
+      if (timeRange === '14days') daysCount = 14;
+      if (timeRange === '30days') daysCount = 30;
+
+      for (let i = daysCount - 1; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 86400000);
+        const dateKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+        emptyPoints.push({
+          dateKey,
+          displayDate: `${d.getDate()} ${monthNames[d.getMonth()]}`,
+          dayName: dayNames[d.getDay()],
+          fullDate: `${fullDayNames[d.getDay()]}, ${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`,
+          worksheetsCount: 0,
+          totalTimeMinutes: 0,
+          totalTimeSeconds: 0,
+          avgTimePerSheetMinutes: 0,
+          avgScore: 0,
+          masteredCount: 0,
+          levels: [],
+        });
+      }
+      return emptyPoints;
     }
 
     const map = new Map<string, {
@@ -127,7 +163,7 @@ export const DailyProgressChart: React.FC<DailyProgressChartProps> = ({
       const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
       if (map.has(key)) {
         map.get(key)!.sessions.push(s);
-      } else if (timeRange === 'all') {
+      } else {
         map.set(key, { dateObj: d, sessions: [s] });
       }
     });
@@ -160,7 +196,7 @@ export const DailyProgressChart: React.FC<DailyProgressChartProps> = ({
       });
 
     return result;
-  }, [sessions, timeRange, useSampleData]);
+  }, [sessions, timeRange, useSampleData, hasRealData]);
 
   // Overall aggregate metrics
   const summaryMetrics = useMemo(() => {
@@ -286,14 +322,19 @@ export const DailyProgressChart: React.FC<DailyProgressChartProps> = ({
               <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
                 Grafik Kemajuan Harian Siswa
               </h3>
-              {sessions.length === 0 && (
-                <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-bold rounded-full border border-amber-200 dark:border-amber-800">
-                  Data Contoh
+              {hasRealData ? (
+                <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Data Riil ({sessions.length} Sesi)
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold rounded-full border border-slate-200 dark:border-slate-700">
+                  {useSampleData ? 'Data Simulasi' : 'Belum Ada Sesi'}
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Visualisasi jumlah lembar kerja yang diselesaikan vs total durasi belajar harian (Recharts).
+              Visualisasi jumlah lembar kerja aktual yang diselesaikan vs total durasi waktu belajar harian.
             </p>
           </div>
         </div>
@@ -325,18 +366,18 @@ export const DailyProgressChart: React.FC<DailyProgressChartProps> = ({
             );
           })}
 
-          {sessions.length > 0 && (
+          {!hasRealData && (
             <button
               type="button"
               id="toggle-daily-sample-data-btn"
               onClick={() => setUseSampleData(!useSampleData)}
-              className={`ml-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
+              className={`ml-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
                 useSampleData
                   ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300'
-                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+                  : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
               }`}
             >
-              {useSampleData ? 'Data Contoh' : 'Data Riil'}
+              {useSampleData ? 'Tampilkan Kosong' : 'Lihat Contoh'}
             </button>
           )}
         </div>

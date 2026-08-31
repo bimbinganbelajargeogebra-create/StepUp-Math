@@ -137,15 +137,17 @@ export const PerformanceTrendChart: React.FC<PerformanceTrendChartProps> = ({
 }) => {
   const [metricTab, setMetricTab] = useState<'accuracy' | 'time' | 'combined'>('combined');
   const [selectedLevelFilter, setSelectedLevelFilter] = useState<string>('all');
-  const [useSampleData, setUseSampleData] = useState<boolean>(sessions.length === 0);
+  const [useSampleData, setUseSampleData] = useState<boolean>(false);
+
+  const hasRealData = sessions.length > 0;
 
   // Auto switch sample toggle if sessions change
   const currentDataSource = useMemo(() => {
-    if (useSampleData || sessions.length === 0) {
+    if (!hasRealData && useSampleData) {
       return SAMPLE_SESSIONS;
     }
     return sessions;
-  }, [sessions, useSampleData]);
+  }, [sessions, useSampleData, hasRealData]);
 
   // Filtered dataset
   const filteredData = useMemo(() => {

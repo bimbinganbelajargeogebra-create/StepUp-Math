@@ -17,7 +17,9 @@ import {
   ShieldCheck,
   Lock,
   KeyRound,
-  AlertCircle
+  AlertCircle,
+  GraduationCap,
+  ListOrdered
 } from 'lucide-react';
 import { KumonLevelId, Question } from '../types';
 import { KUMON_LEVEL_ORDER, KUMON_LEVELS } from '../data/curriculumData';
@@ -26,9 +28,12 @@ import { verifyAdminPassword } from '../utils/storage';
 import { KaTeXMath, MathText } from './KaTeXMath';
 import { MathLogo } from './MathLogo';
 
+export type WorksheetPrintMode = 'questions_only' | 'with_answers' | 'full_solutions';
+
 interface KumonWorksheetPrintModalProps {
   initialLevelId?: KumonLevelId;
   initialWorksheetNum?: number;
+  initialMode?: WorksheetPrintMode;
   isAdmin?: boolean;
   onClose: () => void;
 }
@@ -36,16 +41,19 @@ interface KumonWorksheetPrintModalProps {
 export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> = ({
   initialLevelId = 'E',
   initialWorksheetNum = 1,
+  initialMode = 'questions_only',
   isAdmin = false,
   onClose
 }) => {
-  const [isAuthorized, setIsAuthorized] = useState<boolean>(isAdmin);
+  // Allow all users to access single level printable sheets immediately;
+  // Admin password gate is reserved if user switches to batch all 18 levels if not admin.
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(true);
   const [adminPassInput, setAdminPassInput] = useState<string>('');
   const [authError, setAuthError] = useState<string>('');
 
   const [selectedLevel, setSelectedLevel] = useState<KumonLevelId | 'ALL'>(initialLevelId);
   const [selectedWorksheet, setSelectedWorksheet] = useState<number | 'ALL'>(initialWorksheetNum);
-  const [showAnswerKey, setShowAnswerKey] = useState<boolean>(false);
+  const [printMode, setPrintMode] = useState<WorksheetPrintMode>(initialMode);
 
   const handleVerifyPassword = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +61,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
       setIsAuthorized(true);
       setAuthError('');
     } else {
-      setAuthError('Password admin salah. Fitur cetak PDF hanya dapat diakses oleh Admin.');
+      setAuthError('Password admin salah. Silakan coba lagi.');
     }
   };
 
@@ -97,12 +105,16 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
     const container = document.getElementById('printable-sheets-container');
     if (!container) return;
 
+    const modeLabel = 
+      printMode === 'full_solutions' ? 'Pembahasan Lengkap' :
+      printMode === 'with_answers' ? 'Soal + Kunci Jawaban' : 'Lembar Soal Siswa';
+
     const htmlContent = `<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StepUp Math - Lembar Kerja Level ${selectedLevel} (Lembar ${selectedWorksheet})</title>
+  <title>StepUp Math - ${modeLabel} - Level ${selectedLevel} (${selectedWorksheet === 'ALL' ? 'Semua Lembar' : 'Lembar ' + selectedWorksheet})</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -127,34 +139,38 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
 </head>
 <body>
   <div class="no-print" style="text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 12px;">
-    <button onclick="window.print()" style="padding: 10px 20px; background: #4f46e5; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">
-      🖨️ Cetak / Simpan sebagai PDF (A4)
+    <button onclick="window.print()" style="padding: 10px 24px; background: #4f46e5; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      🖨️ Cetak / Simpan PDF (${modeLabel})
     </button>
   </div>
   ${container.innerHTML}
 </body>
 </html>`;
 
+    const filePrefix = 
+      printMode === 'full_solutions' ? 'Pembahasan-Lengkap-StepUpMath' :
+      printMode === 'with_answers' ? 'Soal-Dan-Kunci-StepUpMath' : 'Lembar-Soal-StepUpMath';
+
     const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Lembar-Kerja-StepUpMath-Level-${selectedLevel}-${selectedWorksheet}.html`;
+    link.download = `${filePrefix}-Level-${selectedLevel}-${selectedWorksheet}.html`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
-  // If not yet authorized as admin, show the Admin Gate
-  if (!isAuthorized) {
+  // If user selected ALL levels but is not authorized, prompt password
+  if (selectedLevel === 'ALL' && !isAuthorized && !isAdmin) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden text-slate-900">
           <div className="bg-slate-900 p-6 text-white text-center relative border-b border-slate-800">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => setSelectedLevel('E')}
               className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
@@ -162,9 +178,9 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
             <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center mx-auto mb-3 text-amber-300 shadow-md">
               <Lock className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-black">Akses Khusus Admin</h3>
+            <h3 className="text-xl font-black">Akses Cetak Massal (18 Level)</h3>
             <p className="text-xs text-slate-400 mt-1">
-              Pencetakan lembar kerja fisik PDF dibatasi khusus untuk Admin / Guru.
+              Pencetakan massal seluruh 18 level sekaligus memerlukan verifikasi Guru/Admin.
             </p>
           </div>
 
@@ -179,7 +195,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
                 <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
-                Password Master Admin
+                Password Admin
               </label>
               <input
                 type="password"
@@ -196,14 +212,14 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
                 type="submit"
                 className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer"
               >
-                Buka Generator Cetak
+                Buka Cetak Massal
               </button>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={() => setSelectedLevel('E')}
                 className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition-colors cursor-pointer"
               >
-                Batal
+                Kembali ke Level Tunggal
               </button>
             </div>
           </form>
@@ -214,7 +230,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/85 backdrop-blur-xs overflow-hidden">
-      {/* Top Admin Control Bar (Hidden during Print) */}
+      {/* Top Header Controls Bar (Hidden during window.print()) */}
       <header className="print:hidden bg-slate-900 border-b border-slate-800 text-white px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-amber-300 shadow-md shadow-indigo-600/30 font-bold">
@@ -223,15 +239,15 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-extrabold text-sm sm:text-base tracking-tight">
-                Cetak Lembar Kerja Siswa (PDF Generator)
+                Pusat Unduh &amp; Cetak Lembar Kerja Mandiri
               </h2>
-              <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" />
-                Akses Master Admin
+              <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                <FileText className="w-3 h-3 text-amber-300" />
+                Format Standar A4
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Format lembar kerja mandiri bertahap • Soal #1 Contoh &amp; Penyelesaian Bertingkat
+              Pilih format unduh: Soal Latihan Siswa, Kunci Jawaban Singkat, atau Pembahasan Lengkap Rinci.
             </p>
           </div>
         </div>
@@ -243,7 +259,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
             id="download-html-worksheets-btn"
             onClick={handleDownloadHtml}
             className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs sm:text-sm rounded-xl border border-slate-700 shadow-sm flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
-            title="Unduh file dokumen HTML lengkap yang dapat dibuka dan dicetak secara offline"
+            title="Unduh file dokumen HTML lengkap yang dapat dibuka dan dicetak secara offline kapan saja"
           >
             <Download className="w-4 h-4 text-emerald-400" />
             <span>Unduh Dokumen (.html)</span>
@@ -254,7 +270,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
             id="print-pdf-worksheets-btn"
             onClick={handlePrint}
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer active:scale-95"
-            title="Buka dialog cetak browser (Pilih 'Save as PDF' untuk menyimpan file PDF)"
+            title="Buka dialog cetak browser (Pilih 'Save as PDF' untuk menyimpan file PDF berkualitas tinggi)"
           >
             <Printer className="w-4 h-4 text-amber-300" />
             <span>Cetak / Simpan PDF</span>
@@ -271,12 +287,12 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
         </div>
       </header>
 
-      {/* Filter and Configuration Sub-Bar (Hidden during Print) */}
-      <div className="print:hidden bg-slate-800/90 border-b border-slate-700 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+      {/* Filter and Mode Selector Sub-Bar (Hidden during Print) */}
+      <div className="print:hidden bg-slate-800/95 border-b border-slate-700 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
         <div className="flex flex-wrap items-center gap-3">
           {/* Level selector */}
           <div className="flex items-center gap-1.5">
-            <span className="text-slate-400 font-semibold">Pilih Level:</span>
+            <span className="text-slate-400 font-semibold">Level:</span>
             <select
               value={selectedLevel}
               onChange={(e) => setSelectedLevel(e.target.value as any)}
@@ -293,7 +309,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
 
           {/* Worksheet selector */}
           <div className="flex items-center gap-1.5">
-            <span className="text-slate-400 font-semibold">Lembar Kerja:</span>
+            <span className="text-slate-400 font-semibold">Lembar:</span>
             <select
               value={selectedWorksheet}
               onChange={(e) => {
@@ -311,24 +327,58 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
             </select>
           </div>
 
-          {/* Answer Key Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowAnswerKey(!showAnswerKey)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold border transition-colors cursor-pointer ${
-              showAnswerKey
-                ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
-            }`}
-          >
-            {showAnswerKey ? <Eye className="w-3.5 h-3.5 text-amber-400" /> : <EyeOff className="w-3.5 h-3.5" />}
-            <span>{showAnswerKey ? 'Kunci Jawaban Aktif' : 'Lembar Kosong Siswa'}</span>
-          </button>
+          {/* 3-Option Print / Download Mode Selector */}
+          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
+            <button
+              type="button"
+              id="mode-questions-only-btn"
+              onClick={() => setPrintMode('questions_only')}
+              className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${
+                printMode === 'questions_only'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Lembar soal kosong dengan ruang hitung, tanpa kunci jawaban (cocok untuk latihan siswa)"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Hanya Soal Latihan</span>
+            </button>
+
+            <button
+              type="button"
+              id="mode-with-answers-btn"
+              onClick={() => setPrintMode('with_answers')}
+              className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${
+                printMode === 'with_answers'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Lembar soal dengan kunci jawaban terisi pada kotak isian"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Soal + Kunci Jawaban</span>
+            </button>
+
+            <button
+              type="button"
+              id="mode-full-solutions-btn"
+              onClick={() => setPrintMode('full_solutions')}
+              className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${
+                printMode === 'full_solutions'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Lembar soal lengkap dengan seluruh pembahasan rinci, langkah pengerjaan bertingkat, dan rumus"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Lembar + Pembahasan Rinci</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 text-slate-400 text-[11px]">
-          <span>Total: <strong className="text-white font-mono">{sheetList.length} lembar kerja</strong></span>
-          <span className="hidden sm:inline">• Format Standar A4 Portrait (Rapi & Bersih)</span>
+          <span>Total: <strong className="text-white font-mono">{sheetList.length} lembar</strong></span>
+          <span className="hidden md:inline">• Format Standar A4 Portrait (Rapi &amp; Siap Cetak)</span>
         </div>
       </div>
 
@@ -349,19 +399,19 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
               }}
             >
               <div>
-                {/* 1. Kumon Header Standard */}
+                {/* 1. Header Standard */}
                 <div className="border-b-2 border-black pb-2.5 mb-3 flex flex-wrap items-start justify-between gap-4">
                   {/* Left branding and Level identity */}
                   <div>
                     <div className="flex items-center gap-2">
                       <MathLogo size="sm" variant="monochrome" />
                       <span className="text-[11px] font-black tracking-wider text-slate-800 uppercase">
-                        StepUp Math • Sistem Pembelajaran Mandiri
+                        StepUp Math • Pembelajaran Mandiri
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2 mt-1">
                       <span className="text-2xl font-black text-black font-serif tracking-tight">
-                        MATEMATIKA MANDIRI
+                        {printMode === 'full_solutions' ? 'LEMBAR KERJA & PEMBAHASAN' : 'LEMBAR KERJA SISWA'}
                       </span>
                       <span className="px-2.5 py-0.5 bg-black text-white font-black rounded-xs text-sm tracking-wider">
                         LEVEL {sheet.levelId}
@@ -404,156 +454,226 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
                   </div>
                 </div>
 
-                {/* 2. Soal Nomor 1: CONTOH SOAL DAN PENYELESAIAN BERTINGKAT */}
-                {exampleQ && (
-                  <div className="mb-3.5 border-2 border-black rounded-xs bg-slate-50/90 p-3 print:bg-slate-50">
-                    <div className="flex items-center justify-between border-b border-black pb-1 mb-2">
+                {/* MODE A: FULL STEP-BY-STEP SOLUTIONS DISPLAY */}
+                {printMode === 'full_solutions' ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b-2 border-black pb-1 mb-2 bg-slate-100 p-2 rounded-xs">
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-black text-white text-[11px] font-black tracking-wider uppercase rounded-xs">
-                          CONTOH SOAL (1)
-                        </span>
-                        <span className="text-xs font-black text-black">
-                          Pahami Langkah &amp; Pola Penyelesaian Bertingkat:
+                        <BookOpen className="w-4 h-4 text-black" />
+                        <span className="text-xs font-black uppercase tracking-wider text-black">
+                          Kunci Pembahasan Lengkap &amp; Alur Pengerjaan Rinci (Soal 1 – 10)
                         </span>
                       </div>
                       <span className="text-[10px] font-bold text-slate-800 italic">
-                        Model Latihan Bertahap (Small Steps)
+                        Panduan Guru &amp; Belajar Mandiri
                       </span>
                     </div>
 
-                    {/* Example Question Prompt & Math Display */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-3 border border-slate-400 rounded-xs mb-2">
-                      <div className="flex-1">
-                        <p className="text-xs font-bold text-black mb-1">
-                          {exampleQ.prompt}
-                        </p>
-                        {exampleQ.mathFormula && (
-                          <div className="text-base sm:text-lg font-bold text-black my-1">
-                            <KaTeXMath math={exampleQ.mathFormula} block={false} />
-                          </div>
-                        )}
-                        {exampleQ.visualItems && (
-                          <div className="flex flex-wrap gap-1.5 my-1.5">
-                            {Array.from({ length: exampleQ.visualItems.count }).map((_, vi) => (
-                              <span key={vi} className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold">
-                                {vi + 1}
+                    <div className="space-y-2.5">
+                      {sheet.questions.map((q) => (
+                        <div 
+                          key={q.id}
+                          className="border border-black rounded-xs p-2.5 bg-white space-y-1.5 shadow-2xs"
+                        >
+                          <div className="flex items-start justify-between gap-2 border-b border-slate-300 pb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="w-5 h-5 rounded-full bg-black text-white font-black text-[11px] flex items-center justify-center shrink-0">
+                                {q.questionNumber}
                               </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="px-3 py-1.5 bg-slate-100 border border-slate-400 rounded-xs text-right shrink-0">
-                        <span className="text-[9px] uppercase font-bold text-slate-700 block">Kunci Jawaban</span>
-                        <span className="text-sm sm:text-base font-black text-black font-mono">
-                          {exampleQ.correctAnswer}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Step-by-Step Hierarchical Solution (Penyelesaian Bertingkat) */}
-                    <div className="bg-white border border-slate-400 rounded-xs p-2.5 space-y-1">
-                      <h4 className="text-[10px] font-black uppercase tracking-wider text-black flex items-center gap-1.5 mb-1">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                        Langkah Penyelesaian Bertingkat:
-                      </h4>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-black">
-                        {(exampleQ.stepByStepSolution || []).map((step, sidx) => (
-                          <div
-                            key={sidx}
-                            className="p-2 bg-slate-50 border-l-3 border-black rounded-r-xs font-medium text-[11px] flex items-start gap-1.5"
-                          >
-                            <span className="font-black text-black shrink-0">{sidx + 1}.</span>
-                            <span className="leading-snug">
-                              <MathText text={step} />
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-2 pt-1.5 border-t border-dashed border-slate-300 flex items-center justify-between text-[11px]">
-                        <span className="text-slate-700 italic font-medium">
-                          Petunjuk: Selesaikan soal-soal latihan berikutnya dengan alur hitung serupa.
-                        </span>
-                        <div className="px-2.5 py-0.5 bg-black text-white font-black rounded-xs text-[11px]">
-                          Hasil Akhir = {exampleQ.correctAnswer}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 3. Soal Latihan Mandiri No. 2 s/d No. 10 */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between border-b border-black pb-1 mb-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-black">
-                      Soal Latihan Mandiri (Kerjakan Cepat &amp; Tepat)
-                    </span>
-                    <span className="text-[10px] text-slate-700 font-bold">
-                      Gunakan ruang hitung bertingkat di bawah setiap nomor
-                    </span>
-                  </div>
-
-                  {/* 2-Column Grid of Practice Questions */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
-                    {practiceQuestions.map((q) => (
-                      <div
-                        key={q.id}
-                        className="border-2 border-black rounded-xs p-3 bg-white relative flex flex-col justify-between min-h-[105px] shadow-2xs"
-                      >
-                        {/* Question Number & Math Formula */}
-                        <div>
-                          <div className="flex items-start justify-between gap-2 mb-1.5">
-                            <span className="w-5 h-5 rounded-full bg-black text-white font-black text-[11px] flex items-center justify-center shrink-0">
-                              {q.questionNumber}
-                            </span>
-                            <span className="text-xs font-bold text-black flex-1 leading-snug">
-                              {q.prompt}
-                            </span>
+                              <span className="text-xs font-bold text-black">
+                                {q.prompt}
+                              </span>
+                            </div>
+                            <div className="px-2 py-0.5 bg-slate-100 border border-black rounded-xs text-[11px] font-mono font-black text-black shrink-0">
+                              Jawaban = {q.correctAnswer}
+                            </div>
                           </div>
 
-                          {/* Math Formula or Equation with crisp typography */}
+                          {/* Formula Display */}
                           {q.mathFormula && (
-                            <div className="my-2 text-center font-black text-black text-base sm:text-lg py-1">
+                            <div className="text-center font-black text-black text-sm sm:text-base py-0.5 bg-slate-50 border border-slate-200 rounded-xs">
                               <KaTeXMath math={q.mathFormula} block={false} />
                             </div>
                           )}
 
-                          {q.visualItems && (
-                            <div className="flex flex-wrap gap-1.5 my-1.5 justify-center">
-                              {Array.from({ length: q.visualItems.count }).map((_, vi) => (
-                                <span key={vi} className="w-4 h-4 rounded-full bg-black text-white flex items-center justify-center text-[9px] font-bold">
-                                  {vi + 1}
-                                </span>
+                          {/* Step-by-Step Breakdown */}
+                          <div className="bg-slate-50 border-l-2 border-black p-2 space-y-1 text-[11px] text-slate-900">
+                            <div className="font-bold text-[10px] uppercase text-black flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-amber-600" />
+                              Langkah Penyelesaian:
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px]">
+                              {(q.stepByStepSolution || []).map((step, sIdx) => (
+                                <div key={sIdx} className="p-1 bg-white border border-slate-300 rounded-xs leading-snug">
+                                  <MathText text={step} />
+                                </div>
                               ))}
                             </div>
-                          )}
+                            {q.explanation && (
+                              <div className="text-[10px] text-slate-700 italic pt-0.5 border-t border-dashed border-slate-300">
+                                <strong>Penjelasan Konsep:</strong> <MathText text={q.explanation} />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  /* MODE B: STANDARD WORKSHEET (Questions Only OR With Short Answer Key) */
+                  <>
+                    {/* 2. Question #1: Example Problem with Model Solution */}
+                    {exampleQ && (
+                      <div className="mb-3.5 border-2 border-black rounded-xs bg-slate-50/90 p-3 print:bg-slate-50">
+                        <div className="flex items-center justify-between border-b border-black pb-1 mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-black text-white text-[11px] font-black tracking-wider uppercase rounded-xs">
+                              CONTOH SOAL (1)
+                            </span>
+                            <span className="text-xs font-black text-black">
+                              Pahami Langkah &amp; Pola Penyelesaian Bertingkat:
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-800 italic">
+                            Model Latihan Bertahap
+                          </span>
                         </div>
 
-                        {/* Clean Ruang Hitung / Blank Working Space Guideline & Answer Box */}
-                        <div className="mt-2 pt-2 border-t border-dotted border-slate-400 flex items-center justify-between gap-2">
-                          <div className="text-[10px] text-slate-400 font-mono tracking-widest select-none">
-                            ............................
+                        {/* Example Question Prompt & Math Display */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-3 border border-slate-400 rounded-xs mb-2">
+                          <div className="flex-1">
+                            <p className="text-xs font-bold text-black mb-1">
+                              {exampleQ.prompt}
+                            </p>
+                            {exampleQ.mathFormula && (
+                              <div className="text-base sm:text-lg font-bold text-black my-1">
+                                <KaTeXMath math={exampleQ.mathFormula} block={false} />
+                              </div>
+                            )}
+                            {exampleQ.visualItems && (
+                              <div className="flex flex-wrap gap-1.5 my-1.5">
+                                {Array.from({ length: exampleQ.visualItems.count }).map((_, vi) => (
+                                  <span key={vi} className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold">
+                                    {vi + 1}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
 
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-black text-black">Jawab =</span>
-                            <div className="min-w-[80px] h-6 border-2 border-black bg-slate-50 flex items-center justify-center px-2 text-xs font-mono font-black text-black">
-                              {showAnswerKey ? q.correctAnswer : ''}
+                          <div className="px-3 py-1.5 bg-slate-100 border border-slate-400 rounded-xs text-right shrink-0">
+                            <span className="text-[9px] uppercase font-bold text-slate-700 block">Jawaban Contoh</span>
+                            <span className="text-sm sm:text-base font-black text-black font-mono">
+                              {exampleQ.correctAnswer}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Step-by-Step Hierarchical Solution (Penyelesaian Bertingkat) */}
+                        <div className="bg-white border border-slate-400 rounded-xs p-2.5 space-y-1">
+                          <h4 className="text-[10px] font-black uppercase tracking-wider text-black flex items-center gap-1.5 mb-1">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                            Langkah Penyelesaian Bertingkat:
+                          </h4>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-black">
+                            {(exampleQ.stepByStepSolution || []).map((step, sidx) => (
+                              <div
+                                key={sidx}
+                                className="p-2 bg-slate-50 border-l-3 border-black rounded-r-xs font-medium text-[11px] flex items-start gap-1.5"
+                              >
+                                <span className="font-black text-black shrink-0">{sidx + 1}.</span>
+                                <span className="leading-snug">
+                                  <MathText text={step} />
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="mt-2 pt-1.5 border-t border-dashed border-slate-300 flex items-center justify-between text-[11px]">
+                            <span className="text-slate-700 italic font-medium">
+                              Petunjuk: Kerjakan soal-soal latihan mandiri berikutnya dengan alur hitung serupa.
+                            </span>
+                            <div className="px-2.5 py-0.5 bg-black text-white font-black rounded-xs text-[11px]">
+                              Hasil Akhir = {exampleQ.correctAnswer}
                             </div>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    )}
+
+                    {/* 3. Practice Questions No. 2 to 10 */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between border-b border-black pb-1 mb-2">
+                        <span className="text-xs font-black uppercase tracking-wider text-black">
+                          Soal Latihan Mandiri (Kerjakan Cepat &amp; Tepat)
+                        </span>
+                        <span className="text-[10px] text-slate-700 font-bold">
+                          Gunakan ruang hitung bertingkat di bawah setiap nomor
+                        </span>
+                      </div>
+
+                      {/* 2-Column Grid of Practice Questions */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                        {practiceQuestions.map((q) => (
+                          <div
+                            key={q.id}
+                            className="border-2 border-black rounded-xs p-3 bg-white relative flex flex-col justify-between min-h-[105px] shadow-2xs"
+                          >
+                            {/* Question Number & Math Formula */}
+                            <div>
+                              <div className="flex items-start justify-between gap-2 mb-1.5">
+                                <span className="w-5 h-5 rounded-full bg-black text-white font-black text-[11px] flex items-center justify-center shrink-0">
+                                  {q.questionNumber}
+                                </span>
+                                <span className="text-xs font-bold text-black flex-1 leading-snug">
+                                  {q.prompt}
+                                </span>
+                              </div>
+
+                              {/* Math Formula with KaTeX */}
+                              {q.mathFormula && (
+                                <div className="my-2 text-center font-black text-black text-base sm:text-lg py-1">
+                                  <KaTeXMath math={q.mathFormula} block={false} />
+                                </div>
+                              )}
+
+                              {q.visualItems && (
+                                <div className="flex flex-wrap gap-1.5 my-1.5 justify-center">
+                                  {Array.from({ length: q.visualItems.count }).map((_, vi) => (
+                                    <span key={vi} className="w-4 h-4 rounded-full bg-black text-white flex items-center justify-center text-[9px] font-bold">
+                                      {vi + 1}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Clean Ruang Hitung / Blank Working Space Guideline & Answer Box */}
+                            <div className="mt-2 pt-2 border-t border-dotted border-slate-400 flex items-center justify-between gap-2">
+                              <div className="text-[10px] text-slate-400 font-mono tracking-widest select-none">
+                                ............................
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-black text-black">Jawab =</span>
+                                <div className="min-w-[80px] h-6 border-2 border-black bg-slate-50 flex items-center justify-center px-2 text-xs font-mono font-black text-black">
+                                  {printMode === 'with_answers' ? q.correctAnswer : ''}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* 4. Footer standard */}
+              {/* 4. Footer Standard */}
               <div className="mt-4 pt-2 border-t-2 border-black flex items-center justify-between text-[10px] text-slate-700 font-bold">
                 <div>
-                  StepUp Math • Lembar Kerja Mandiri Level {sheet.levelId} (Lembar {sheet.worksheetNum} / 10)
+                  StepUp Math • {printMode === 'full_solutions' ? 'Kunci & Pembahasan' : 'Lembar Mandiri'} Level {sheet.levelId} (Lembar {sheet.worksheetNum} / 10)
                 </div>
                 <div>
                   Target Standar Waktu: {lvlInfo.standardTimeMinutes} Menit &bull; 100% Benar

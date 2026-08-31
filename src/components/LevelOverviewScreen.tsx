@@ -146,17 +146,18 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
               </button>
             )}
 
-            {/* Quick Print PDF Button (ONLY for Admin access) */}
-            {profile.isAdmin && onOpenPrint && (
+            {/* Quick Print & Download PDF / HTML Button */}
+            {onOpenPrint && (
               <button
-                id="admin-quick-print-button"
+                id="quick-print-worksheets-button"
                 type="button"
                 onClick={() => onOpenPrint()}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
-                title="Cetak Lembar Kerja Siswa (Khusus Akses Admin)"
+                title="Cetak & Unduh Lembar Kerja (Pilihan: Soal Saja, Kunci Jawaban, atau Pembahasan Lengkap)"
               >
                 <Printer className="w-3.5 h-3.5 text-amber-300" />
-                <span className="hidden sm:inline">Cetak PDF (Admin)</span>
+                <span className="hidden sm:inline">Unduh / Cetak Soal &amp; Pembahasan</span>
+                <span className="sm:hidden">Cetak</span>
               </button>
             )}
 
@@ -532,7 +533,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                {profile.isAdmin && onOpenPrint && (
+                {onOpenPrint && (
                   <button
                     type="button"
                     onClick={() => {
@@ -541,10 +542,10 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                       onOpenPrint(lvl);
                     }}
                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
-                    title="Cetak Seluruh Lembar Kerja Level Ini (Khusus Admin)"
+                    title="Unduh atau Cetak Lembar Kerja & Pembahasan Lengkap Level Ini"
                   >
                     <Printer className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Cetak PDF</span>
+                    <span>Unduh / Cetak Level Ini</span>
                   </button>
                 )}
 

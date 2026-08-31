@@ -2,144 +2,246 @@ import { KumonLevelId, Question } from '../types';
 
 export function getStepByStepSolutionForQuestion(levelId: KumonLevelId, q: Partial<Question>): string[] {
   const ans = q.correctAnswer || '';
+  const formula = q.mathFormula || q.prompt || '';
+
   switch (levelId) {
-    case '6A':
+    case '6A': {
+      const count = q.visualItems?.count || parseInt(ans, 10) || 1;
       return [
-        'Langkah 1: Amati objek gambar secara teliti dari kiri ke kanan.',
-        'Langkah 2: Hitung bertahap satu per satu: 1, 2, 3, ... hingga objek terakhir.',
-        `Langkah 3: Jumlah seluruh objek yang terhitung adalah ${ans}.`,
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Amati seluruh susunan titik/objek dari posisi paling kiri ke kanan.',
+        `Langkah 2: Lakukan pembilangan teratur secara berurutan: ${Array.from({ length: Math.min(count, 5) }, (_, i) => i + 1).join(', ')}${count > 5 ? `, ..., ${count}` : ''}.`,
+        `Langkah 3: Jumlah total objek yang terhitung secara tepat adalah ${count}.`,
+        `Jawaban Akhir: ${ans}`
       ];
-    case '5A':
+    }
+
+    case '5A': {
       return [
-        'Langkah 1: Perhatikan pola deret bilangan yang teratur bertambah 1 (+1).',
-        'Langkah 2: Temukan bilangan sebelum dan sesudah kotak yang kosong.',
-        `Langkah 3: Bilangan pengisi yang tepat adalah ${ans}.`,
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Perhatikan pola deret bilangan yang selalu bertambah 1 (+1) pada setiap langkah.',
+        'Langkah 2: Amati nilai suku sebelum atau sesudah kotak yang kosong pada deret.',
+        `Langkah 3: Tentukan suku yang hilang dengan melengkapi urutan bilangan bulat teratur.`,
+        `Jawaban Akhir: ${ans}`
       ];
-    case '4A':
+    }
+
+    case '4A': {
       return [
-        'Langkah 1: Konsep penjumlahan 1 (+1) adalah mencari bilangan bulat tepat berikutnya.',
-        `Langkah 2: Bilangan penerus dari suku awal adalah ${ans}.`,
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Pahami konsep dasar operasi penambahan 1 (+1) sebagai pencarian bilangan penerus langsung.',
+        `Langkah 2: Bilangan bulat tepat setelah suku awal pada garis bilangan adalah ${ans}.`,
+        `Jawaban Akhir: ${ans}`
       ];
-    case '3A':
+    }
+
+    case '3A': {
       return [
-        'Langkah 1: Gunakan teknik membilang maju sesuai nilai penambah.',
-        'Langkah 2: Jumlahkan secara langsung atau genapkan ke kelipatan 10 terdekat.',
-        `Langkah 3: Nilai total penjumlahan adalah ${ans}.`,
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Identifikasi suku pertama dan suku penambah pada soal penjumlahan.',
+        'Langkah 2: Gunakan strategi membilang maju atau pengelompokan satuan dengan cermat.',
+        `Langkah 3: Jumlahkan kedua bilangan untuk mendapatkan nilai total.`,
+        `Jawaban Akhir: ${ans}`
       ];
-    case '2A':
+    }
+
+    case '2A': {
+      if (q.prompt?.toLowerCase().includes('kurang') || formula.includes('-')) {
+        return [
+          'Langkah 1: Perhatikan operasi pengurangan pada bilangan yang diberikan.',
+          'Langkah 2: Hitung mundur dari bilangan yang dikurangi sebesar nilai pengurangnya.',
+          `Langkah 3: Uji kebenaran hasil: (${ans}) + (pengurang) = (bilangan mula-mula).`,
+          `Jawaban Akhir: ${ans}`
+        ];
+      }
       return [
-        'Langkah 1: Identifikasi operasi hitung yang diminta (penjumlahan atau pengurangan).',
-        'Langkah 2: Hitung nilai secara bertahap pada garis bilangan.',
-        `Langkah 3: Uji kebalikan operasi: hasil + pengurang = bilangan awal.`,
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Identifikasi suku-suku yang dijumlahkan (+6 s.d +10).',
+        'Langkah 2: Gunakan teknik pelengkap 10 (genapkan suku pertama ke 10, lalu tambahkan sisa satuan).',
+        `Langkah 3: Gabungkan hasil puluhan dan satuan secara tepat.`,
+        `Jawaban Akhir: ${ans}`
       ];
-    case 'A':
+    }
+
+    case 'A': {
+      if (q.prompt?.toLowerCase().includes('kurang') || formula.includes('-')) {
+        return [
+          'Langkah 1: Uraikan kedua bilangan menurut nilai tempat (puluhan dan satuan).',
+          'Langkah 2: Kurangkan nilai tempat puluhan, lalu kurangkan nilai tempat satuan.',
+          'Langkah 3: Gabungkan selisih puluhan dan satuan untuk mendapatkan hasil akhir.',
+          `Jawaban Akhir: ${ans}`
+        ];
+      }
       return [
-        'Langkah 1: Pisahkan bilangan menurut nilai tempat (puluhan dan satuan).',
-        'Langkah 2: Operasikan nilai puluhan, lalu operasikan nilai satuan.',
-        'Langkah 3: Gabungkan hasil puluhan dan satuan secara cermat.',
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Pisahkan bilangan mendatar menurut nilai tempat puluhan dan satuan.',
+        'Langkah 2: Jumlahkan bagian puluhan, kemudian jumlahkan bagian satuan.',
+        'Langkah 3: Jumlahkan kedua hasil nilai tempat untuk memperoleh nilai akhir.',
+        `Jawaban Akhir: ${ans}`
       ];
-    case 'B':
+    }
+
+    case 'B': {
+      if (formula.includes('-')) {
+        return [
+          'Langkah 1: Susun bilangan sejajar lurus ke bawah berdasarkan kolom ratusan, puluhan, dan satuan.',
+          'Langkah 2: Hitung kolom satuan: jika angka atas lebih kecil, pinjam 1 puluhan (10) dari kolom di sebelah kirinya.',
+          'Langkah 3: Lanjutkan pengurangan pada kolom puluhan dan ratusan secara berurutan.',
+          `Jawaban Akhir: ${ans}`
+        ];
+      }
       return [
-        'Langkah 1: Susun bilangan sejajar lurus ke bawah berdasarkan kolom nilai tempat.',
-        'Langkah 2: Hitung kolom satuan terlebih dahulu (terapkan teknik simpan/pinjam jika diperlukan).',
-        'Langkah 3: Lanjutkan ke kolom puluhan dan ratusan secara berurutan.',
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Susun bilangan sejajar vertikal lurus pada kolom nilai tempat.',
+        'Langkah 2: Hitung kolom satuan terlebih dahulu: jika hasil ≥ 10, simpan nilai puluhan ke kolom kiri.',
+        'Langkah 3: Jumlahkan kolom puluhan dan ratusan beserta simpanan angka sebelumnya.',
+        `Jawaban Akhir: ${ans}`
       ];
-    case 'C':
+    }
+
+    case 'C': {
+      if (formula.includes('\\div') || formula.includes('÷')) {
+        return [
+          'Langkah 1: Terapkan konsep pembagian sebagai operasi kebalikan dari perkalian dasar.',
+          `Langkah 2: Cari bilangan pengali yang memenuhi: (pembagi) × (${ans}) = (bilangan yang dibagi).`,
+          `Langkah 3: Tuliskan hasil bagi secara tepat sesuai tabel perkalian.`,
+          `Jawaban Akhir: ${ans}`
+        ];
+      }
       return [
-        'Langkah 1: Terapkan konsep perkalian sebagai penjumlahan berulang atau kebalikan pembagian.',
-        'Langkah 2: Hitung hasil kali atau bagi bilangan secara bertahap.',
-        `Langkah 3: Pastikan hasil akhir sesuai dengan tabel perkalian dasar standar.`,
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Terapkan konsep perkalian dasar sebagai bentuk penjumlahan berulang.',
+        'Langkah 2: Gunakan tabel hafalan perkalian dasar untuk menghitung hasil kali suku-suku.',
+        `Langkah 3: Periksa hasil kali kedua bilangan secara teliti.`,
+        `Jawaban Akhir: ${ans}`
       ];
-    case 'D':
+    }
+
+    case 'D': {
+      if (q.prompt?.toLowerCase().includes('sederhana') || formula.includes('\\frac')) {
+        return [
+          'Langkah 1: Tentukan Faktor Persekutuan Terbesar (FPB) dari pembilang dan penyebut.',
+          'Langkah 2: Bagi kedua bilangan (pembilang dan penyebut) dengan nilai FPB yang sama.',
+          `Langkah 3: Tuliskan pecahan dalam bentuk paling sederhana (irreducible fraction).`,
+          `Jawaban Akhir: ${ans}`
+        ];
+      }
+      if (q.prompt?.toLowerCase().includes('sisa') || formula.includes('\\div')) {
+        return [
+          'Langkah 1: Lakukan pembagian bersusun dari angka bernilai tempat tertinggi.',
+          'Langkah 2: Kalikan hasil bagi sementara dengan pembagi, lalu kurangkan untuk mencari sisa pembagian.',
+          `Langkah 3: Nyatakan hasil bagi bulat beserta nilai sisa yang diperoleh.`,
+          `Jawaban Akhir: ${ans}`
+        ];
+      }
       return [
-        'Langkah 1: Lakukan pembagian bersusun dari digit bernilai tempat tertinggi.',
-        'Langkah 2: Kalikan hasil bagi sementara dengan pembagi, lalu kurangkan untuk mencari sisa.',
-        'Langkah 3: Tuliskan hasil bagi lengkap beserta sisa pembagiannya secara rapi.',
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Lakukan perkalian bersusun 2 digit dengan mengalikan digit satuan terlebih dahulu.',
+        'Langkah 2: Kalikan digit puluhan dan tempatkan hasilnya bergeser 1 posisi ke kiri.',
+        'Langkah 3: Jumlahkan hasil kali parsial untuk memperoleh hasil kali total.',
+        `Jawaban Akhir: ${ans}`
       ];
-    case 'E':
+    }
+
+    case 'E': {
+      if (formula.includes('\\times') || formula.includes('×')) {
+        return [
+          'Langkah 1: Kalikan bagian pembilang dengan pembilang: (pembilang₁ × pembilang₂).',
+          'Langkah 2: Kalikan bagian penyebut dengan penyebut: (penyebut₁ × penyebut₂).',
+          'Langkah 3: Sederhanakan pecahan ke bentuk paling sederhana bila pembilang dan penyebut memiliki faktor persekutuan.',
+          `Jawaban Akhir: ${ans}`
+        ];
+      }
       return [
-        'Langkah 1: Samakan penyebut kedua pecahan dengan mencari KPK penyebut.',
-        'Langkah 2: Tuliskan pecahan senilai yang memiliki penyebut baru yang sama.',
-        'Langkah 3: Operasikan bagian pembilang dan pertahankan penyebut yang sudah sama.',
-        'Langkah 4: Sederhanakan bentuk pecahan akhir ke bentuk paling sederhana.',
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Cari Kelipatan Persekutuan Terkecil (KPK) dari penyebut kedua pecahan untuk menyamakan penyebut.',
+        'Langkah 2: Ubah masing-masing pecahan ke bentuk pecahan senilai berpenyebut KPK tersebut.',
+        'Langkah 3: Operasikan bagian pembilang (tambah/kurang) dan pertahankan penyebut yang telah disamakan.',
+        'Langkah 4: Sederhanakan hasil pecahan akhir bila memungkinkan.',
+        `Jawaban Akhir: ${ans}`
       ];
-    case 'F':
+    }
+
+    case 'F': {
       return [
-        'Langkah 1 (Hierarki Operasi KABATAKU): Selesaikan operasi di dalam tanda kurung terlebih dahulu.',
-        'Langkah 2: Kerjakan operasi perkalian (×) dan pembagian (÷) dari kiri ke kanan.',
-        'Langkah 3: Kerjakan operasi penjumlahan (+) dan pengurangan (-) pada tahap akhir.',
-        `Hasil Akhir: ${ans}`
+        'Langkah 1 (Hierarki KABATAKU): Periksa tanda kurung terlebih dahulu jika ada.',
+        'Langkah 2: Dahulukan operasi perkalian (×) dan pembagian (÷) sebelum operasi penjumlahan atau pengurangan.',
+        'Langkah 3: Lakukan operasi penjumlahan (+) dan pengurangan (-) secara berurutan dari kiri ke kanan.',
+        `Jawaban Akhir: ${ans}`
       ];
-    case 'G':
+    }
+
+    case 'G': {
+      if (formula.includes('x')) {
+        return [
+          'Langkah 1: Tuliskan persamaan linear dan pisahkan suku bervariabel di ruas kiri dan konstanta di ruas kanan.',
+          'Langkah 2: Kurangkan konstanta pada kedua ruas untuk mengisolasi suku bervariabel.',
+          'Langkah 3: Bagi kedua ruas dengan koefisien variabel x untuk mendapatkan nilai x.',
+          `Jawaban Akhir: x = ${ans}`
+        ];
+      }
       return [
-        'Langkah 1: Kumpulkan semua suku bervariabel x di ruas kiri dan konstanta di ruas kanan.',
-        'Langkah 2: Sederhanakan suku-suku sejenis di kedua ruas.',
-        'Langkah 3: Bagi kedua ruas dengan koefisien dari x untuk memperoleh nilai x.',
-        `Hasil Akhir: x = ${ans}`
+        'Langkah 1: Perhatikan tanda positif (+) dan negatif (-) pada setiap bilangan bulat.',
+        'Langkah 2: Ingat aturan tanda perkalian: (-) × (+) = (-) dan (-) × (-) = (+).',
+        'Langkah 3: Kalikan nilai mutlak bilangan dan cantumkan tanda yang sesuai.',
+        `Jawaban Akhir: ${ans}`
       ];
-    case 'H':
+    }
+
+    case 'H': {
       return [
-        'Langkah 1 (Metode Eliminasi): Samakan koefisien salah satu variabel, lalu kurangkan/jumlahkan persamaan.',
-        'Langkah 2: Tentukan nilai dari variabel pertama.',
-        'Langkah 3 (Metode Substitusi): Masukkan nilai variabel yang telah diperoleh ke salah satu persamaan.',
-        'Langkah 4: Tentukan nilai variabel kedua dan nyatakan pasangan penyelesaian (x, y).',
-        `Hasil Akhir: (x, y) = (${ans})`
+        'Langkah 1 (Eliminasi): Samakan koefisien salah satu variabel, lalu kurangkan atau jumlahkan kedua persamaan untuk mengeliminasi variabel tersebut.',
+        'Langkah 2: Selesaikan persamaan linear 1 variabel yang tersisa untuk memperoleh nilai variabel pertama.',
+        'Langkah 3 (Substitusi): Masukkan nilai variabel pertama ke salah satu persamaan asal untuk mencari nilai variabel kedua.',
+        `Langkah 4: Tuliskan pasangan penyelesaian (x, y) secara terurut.`,
+        `Jawaban Akhir: (x, y) = (${ans})`
       ];
-    case 'I':
+    }
+
+    case 'I': {
       return [
-        'Langkah 1: Tuliskan bentuk umum persamaan kuadrat ax² + bx + c = 0.',
-        'Langkah 2: Tentukan dua bilangan p dan q sedemikian hingga p × q = c dan p + q = b.',
-        'Langkah 3: Faktorkan menjadi bentuk (x - p)(x - q) = 0 atau (x + p)(x + q) = 0.',
-        'Langkah 4: Tentukan akar-akar penyelesaian: x = x₁ atau x = x₂.',
-        `Hasil Akhir: x = ${ans}`
+        'Langkah 1: Pastikan persamaan kuadrat berada dalam bentuk baku ax² + bx + c = 0.',
+        'Langkah 2: Tentukan dua bilangan p dan q sehingga p × q = c dan p + q = b.',
+        'Langkah 3: Faktorkan persamaan menjadi bentuk perkalian faktor: (x - p)(x - q) = 0.',
+        'Langkah 4: Tentukan akar-akar penyelesaian dengan menyamakan setiap faktor dengan nol (x = p atau x = q).',
+        `Jawaban Akhir: x = ${ans}`
       ];
-    case 'J':
+    }
+
+    case 'J': {
       return [
-        'Langkah 1 (Teorema Sisa): Jika suku banyak P(x) dibagi oleh (x - k), maka sisa pembagian adalah S = P(k).',
+        'Langkah 1 (Teorema Sisa): Jika polinomial P(x) dibagi oleh (x - k), maka sisa pembagian adalah S = P(k).',
         'Langkah 2: Tentukan pembuat nol pembagi: x - k = 0 ⟹ x = k.',
-        'Langkah 3: Substitusikan nilai x = k ke dalam fungsi polinomial P(x).',
-        'Langkah 4: Hitung nilai perpangkatan dan perkalian suku per suku secara teliti.',
-        `Hasil Akhir: Sisa = ${ans}`
+        'Langkah 3: Substitusikan nilai x = k ke setiap suku pada fungsi suku banyak P(x).',
+        'Langkah 4: Hitung nilai perpangkatan dan perkalian aljabar secara teliti hingga didapat nilai sisa.',
+        `Jawaban Akhir: Sisa = ${ans}`
       ];
-    case 'K':
+    }
+
+    case 'K': {
       return [
-        'Langkah 1: Terapkan definisi logaritma: log_a(b) = c ⟺ a^c = b.',
-        'Langkah 2: Gunakan sifat dasar logaritma: log_a(u) + log_a(v) = log_a(u × v).',
-        'Langkah 3: Selesaikan persamaan eksponen/aljabar untuk mencari nilai variabel x.',
-        'Langkah 4: Pastikan syarat numerus terpenuhi (numerus > 0).',
-        `Hasil Akhir: x = ${ans}`
+        'Langkah 1: Gunakan definisi logaritma: log_b(a) = x ⟺ b^x = a.',
+        'Langkah 2: Nyatakan numerus (a) sebagai bilangan berpangkat dengan bilangan pokok/basis yang sama (b).',
+        'Langkah 3: Samakan nilai eksponen/pangkat pada kedua ruas untuk menemukan nilai x.',
+        `Jawaban Akhir: x = ${ans}`
       ];
-    case 'L':
+    }
+
+    case 'L': {
       return [
-        'Langkah 1 (Aturan Pangkat Turunan): d/dx (a · x^n) = a · n · x^(n - 1).',
-        'Langkah 2: Kalikan koefisien fungsi dengan pangkat mula-mula (a × n).',
-        'Langkah 3: Kurangi eksponen variabel x sebanyak 1 (n - 1).',
-        'Langkah 4: Turunan suku konstanta murni selalu bernilai 0.',
-        `Hasil Akhir: f'(x) = ${ans}`
+        'Langkah 1 (Aturan Turunan Fungsi Pangkat): Rumus umum turunan f(x) = a·x^n adalah f\'(x) = a · n · x^(n - 1).',
+        'Langkah 2: Kalikan koefisien (a) dengan pangkat mula-mula (n).',
+        'Langkah 3: Kurangi pangkat variabel x sebanyak 1 unit (n - 1).',
+        `Langkah 4: Tuliskan bentuk turunan pertama f'(x) secara rapi.`,
+        `Jawaban Akhir: f'(x) = ${ans}`
       ];
-    case 'M':
+    }
+
+    case 'M': {
       return [
-        'Langkah 1: Tentukan fungsi antiturunan F(x) = ∫ f(x) dx.',
-        'Langkah 2: Terapkan Teorema Dasar Kalkulus: ∫_a^b f(x) dx = [F(x)]_a^b = F(b) - F(a).',
-        'Langkah 3: Evaluasi nilai fungsi pada batas atas F(b) dan batas bawah F(a).',
-        'Langkah 4: Kurangkan F(b) - F(a) untuk memperoleh nilai integral tentu.',
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Tentukan fungsi antiturunan f(x) dengan aturan integral tak tentu: ∫ a·x^n dx = (a / (n + 1)) · x^(n + 1).',
+        'Langkah 2: Terapkan Teorema Dasar Kalkulus untuk integral tentu: ∫_a^b f(x) dx = [F(x)]_a^b = F(b) - F(a).',
+        'Langkah 3: Evaluasi nilai fungsi antiturunan pada batas atas (b) dan batas bawah (a).',
+        'Langkah 4: Kurangkan nilai F(b) dengan F(a) untuk memperoleh nilai integral tentu.',
+        `Jawaban Akhir: ${ans}`
       ];
+    }
+
     default:
       return [
-        'Langkah 1: Pahami model soal dan formula yang diberikan.',
-        'Langkah 2: Hitung langkah demi langkah secara bertingkat.',
-        `Hasil Akhir: ${ans}`
+        'Langkah 1: Identifikasi konsep matematika dan formula yang diberikan pada soal.',
+        'Langkah 2: Selesaikan perhitungan langkah demi langkah secara sistematis.',
+        `Jawaban Akhir: ${ans}`
       ];
   }
 }
@@ -699,11 +801,13 @@ export function generateWorksheetQuestions(levelId: KumonLevelId, worksheetNum: 
     }
   }
 
-  // Ensure Question #1 is always an Example with step-by-step hierarchical solution
-  if (questions.length > 0) {
-    questions[0].isExample = true;
-    questions[0].stepByStepSolution = getStepByStepSolutionForQuestion(levelId, questions[0]);
-  }
+  // Ensure Question #1 is flagged as Example and all questions have full stepByStepSolution
+  questions.forEach((q, idx) => {
+    if (idx === 0) {
+      q.isExample = true;
+    }
+    q.stepByStepSolution = getStepByStepSolutionForQuestion(levelId, q);
+  });
 
   return questions;
 }
