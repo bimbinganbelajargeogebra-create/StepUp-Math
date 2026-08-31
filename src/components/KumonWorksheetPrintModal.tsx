@@ -93,6 +93,59 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
     window.print();
   };
 
+  const handleDownloadHtml = () => {
+    const container = document.getElementById('printable-sheets-container');
+    if (!container) return;
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StepUp Math - Lembar Kerja Level ${selectedLevel} (Lembar ${selectedWorksheet})</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #000000; }
+    .kumon-print-sheet { background: #ffffff; width: 100%; max-width: 210mm; min-height: 275mm; margin: 0 auto 20px auto; padding: 24px; border: 1px solid #000000; box-sizing: border-box; }
+    .kumon-print-sheet * { color: #000000; }
+    .kumon-print-sheet .text-white { color: #ffffff !important; }
+    .kumon-print-sheet .bg-black { background-color: #000000 !important; }
+    .kumon-print-sheet .border-black { border-color: #000000 !important; }
+    .kumon-print-sheet .katex { font-size: 1.1em !important; color: #000000 !important; font-weight: bold; }
+    @media print {
+      @page { size: A4 portrait; margin: 8mm; }
+      body { background: #ffffff; padding: 0; }
+      .kumon-print-sheet { border: none; margin: 0 auto; padding: 2mm; page-break-inside: avoid; break-inside: avoid; }
+      .kumon-print-sheet:not(:last-child) { page-break-after: always; break-after: page; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 12px;">
+    <button onclick="window.print()" style="padding: 10px 20px; background: #4f46e5; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">
+      🖨️ Cetak / Simpan sebagai PDF (A4)
+    </button>
+  </div>
+  ${container.innerHTML}
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Lembar-Kerja-StepUpMath-Level-${selectedLevel}-${selectedWorksheet}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // If not yet authorized as admin, show the Admin Gate
   if (!isAuthorized) {
     return (
@@ -187,9 +240,21 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
         <div className="flex items-center gap-2">
           <button
             type="button"
+            id="download-html-worksheets-btn"
+            onClick={handleDownloadHtml}
+            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs sm:text-sm rounded-xl border border-slate-700 shadow-sm flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            title="Unduh file dokumen HTML lengkap yang dapat dibuka dan dicetak secara offline"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>Unduh Dokumen (.html)</span>
+          </button>
+
+          <button
+            type="button"
+            id="print-pdf-worksheets-btn"
             onClick={handlePrint}
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer active:scale-95"
-            title="Buka dialog cetak browser (Simpan sebagai PDF)"
+            title="Buka dialog cetak browser (Pilih 'Save as PDF' untuk menyimpan file PDF)"
           >
             <Printer className="w-4 h-4 text-amber-300" />
             <span>Cetak / Simpan PDF</span>
@@ -268,7 +333,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
       </div>
 
       {/* Main Printable Sheets Container */}
-      <div className="flex-1 overflow-y-auto bg-slate-900/60 p-4 sm:p-8 print:p-0 print:m-0 print:bg-white print:overflow-visible flex flex-col items-center">
+      <div id="printable-sheets-container" className="flex-1 overflow-y-auto bg-slate-900/60 p-4 sm:p-8 print:p-0 print:m-0 print:bg-white print:overflow-visible flex flex-col items-center">
         {sheetList.map((sheet, sIdx) => {
           const lvlInfo = KUMON_LEVELS[sheet.levelId];
           const exampleQ = sheet.questions[0];

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { KumonLevelId, StudentProfile, LevelProgress, WorksheetSessionResult, PretestResult } from './types';
 import { 
   getStoredProfile, 
@@ -17,6 +17,7 @@ import {
   saveStoredTheme,
   AppTheme
 } from './utils/storage';
+import { NetworkStatusBanner } from './components/NetworkStatusBanner';
 import { LoginAccessModal } from './components/LoginAccessModal';
 import { HomeLandingScreen } from './components/HomeLandingScreen';
 import { PretestScreen } from './components/PretestScreen';
@@ -52,21 +53,27 @@ export default function App() {
   }>({ isOpen: false });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Initialize from Local Storage on device
-  useEffect(() => {
+  // Sync state from LocalStorage on device
+  const syncStorageData = useCallback(() => {
     const p = getStoredProfile();
     const prog = getStoredLevelProgress();
     const hist = getStoredSessionHistory();
     const pt = getStoredPretestResult();
-    const initialTheme = getStoredTheme();
+    const t = getStoredTheme();
 
     setProfile(p);
     setLevelProgress(prog);
     setSessionHistory(hist);
     setPretestResult(pt);
-    setTheme(initialTheme);
-    saveStoredTheme(initialTheme);
+    setTheme(t);
   }, []);
+
+  // Initialize from Local Storage on device
+  useEffect(() => {
+    syncStorageData();
+    const initialTheme = getStoredTheme();
+    saveStoredTheme(initialTheme);
+  }, [syncStorageData]);
 
   const handleToggleTheme = () => {
     const nextTheme: AppTheme = theme === 'light' ? 'dark' : 'light';
@@ -119,104 +126,96 @@ export default function App() {
     showToast('Berhasil keluar. Data progres belajar tetap tersimpan aman di perangkat.');
   };
 
-  // Step 0: Pre-login Home Landing Dashboard or Login Modal
-  if (!profile || !profile.accessGranted) {
-    if (showLoginModal) {
+  // Render content based on current route/screen state
+  const renderCurrentScreen = () => {
+    // Step 0: Pre-login Home Landing Dashboard or Login Modal
+    if (!profile || !profile.accessGranted) {
+      if (showLoginModal) {
+        return (
+          <LoginAccessModal
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            onBackToHome={() => setShowLoginModal(false)}
+            onSuccess={(newProfile) => {
+              setProfile(newProfile);
+              setLevelProgress(getStoredLevelProgress());
+              setShowLoginModal(false);
+              showToast(`Selamat datang di StepUp Math, ${newProfile.name}!`);
+            }}
+          />
+        );
+      }
+
       return (
-        <LoginAccessModal
+        <HomeLandingScreen
           theme={theme}
           onToggleTheme={handleToggleTheme}
-          onBackToHome={() => setShowLoginModal(false)}
-          onSuccess={(newProfile) => {
-            setProfile(newProfile);
-            setLevelProgress(getStoredLevelProgress());
-            setShowLoginModal(false);
-            showToast(`Selamat datang di StepUp Math, ${newProfile.name}!`);
+          onOpenLogin={() => setShowLoginModal(true)}
+          onQuickTrial={handleQuickTrialStart}
+          onStartPretest={() => {
+            handleQuickTrialStart();
           }}
         />
       );
     }
 
+    // Step 0.5: If logged-in user explicitly wants to view the Home Landing screen
+    if (showHomeViewLoggedIn) {
+      return (
+        <HomeLandingScreen
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          onOpenLogin={() => setShowHomeViewLoggedIn(false)}
+          onQuickTrial={() => setShowHomeViewLoggedIn(false)}
+          onStartPretest={() => setShowHomeViewLoggedIn(false)}
+        />
+      );
+    }
+
+    // Step 1: Diagnostic Pretest (Placement Test)
+    if (!profile.pretestCompleted) {
+      return (
+        <PretestScreen
+          profile={profile}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          onComplete={(assignedLevel) => {
+            const updated = getStoredProfile();
+            setProfile(updated);
+            setLevelProgress(getStoredLevelProgress());
+            setPretestResult(getStoredPretestResult());
+            showToast(`Level awal belajar Anda ditetapkan pada Level ${assignedLevel}`);
+          }}
+        />
+      );
+    }
+
+    // Step 2: Active Worksheet Drill Practice
+    if (activeSession) {
+      return (
+        <WorksheetPracticeScreen
+          levelId={activeSession.levelId}
+          worksheetNum={activeSession.worksheetNum}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          onExit={() => setActiveSession(null)}
+          onFinish={(result, isNewLevelUnlocked, unlockedLevelId) => {
+            setLevelProgress(getStoredLevelProgress());
+            setSessionHistory(getStoredSessionHistory());
+            const updatedProfile = getStoredProfile();
+            if (updatedProfile) setProfile(updatedProfile);
+
+            if (isNewLevelUnlocked && unlockedLevelId) {
+              showToast(`Luar biasa! Level ${unlockedLevelId} telah terbuka!`);
+            }
+            setActiveSession(null);
+          }}
+        />
+      );
+    }
+
+    // Step 3: Main Level Roadmap & Dashboard
     return (
-      <HomeLandingScreen
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        onOpenLogin={() => setShowLoginModal(true)}
-        onQuickTrial={handleQuickTrialStart}
-        onStartPretest={() => {
-          handleQuickTrialStart();
-        }}
-      />
-    );
-  }
-
-  // Step 0.5: If logged-in user explicitly wants to view the Home Landing screen
-  if (showHomeViewLoggedIn) {
-    return (
-      <HomeLandingScreen
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        onOpenLogin={() => setShowHomeViewLoggedIn(false)}
-        onQuickTrial={() => setShowHomeViewLoggedIn(false)}
-        onStartPretest={() => setShowHomeViewLoggedIn(false)}
-      />
-    );
-  }
-
-  // Step 1: Diagnostic Pretest (Placement Test)
-  if (!profile.pretestCompleted) {
-    return (
-      <PretestScreen
-        profile={profile}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        onComplete={(assignedLevel) => {
-          const updated = getStoredProfile();
-          setProfile(updated);
-          setLevelProgress(getStoredLevelProgress());
-          setPretestResult(getStoredPretestResult());
-          showToast(`Level awal belajar Anda ditetapkan pada Level ${assignedLevel}`);
-        }}
-      />
-    );
-  }
-
-  // Step 2: Active Worksheet Drill Practice
-  if (activeSession) {
-    return (
-      <WorksheetPracticeScreen
-        levelId={activeSession.levelId}
-        worksheetNum={activeSession.worksheetNum}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        onExit={() => setActiveSession(null)}
-        onFinish={(result, isNewLevelUnlocked, unlockedLevelId) => {
-          setLevelProgress(getStoredLevelProgress());
-          setSessionHistory(getStoredSessionHistory());
-          const updatedProfile = getStoredProfile();
-          if (updatedProfile) setProfile(updatedProfile);
-
-          if (isNewLevelUnlocked && unlockedLevelId) {
-            showToast(`Luar biasa! Level ${unlockedLevelId} telah terbuka!`);
-          }
-          setActiveSession(null);
-        }}
-      />
-    );
-  }
-
-  // Step 3: Main Level Roadmap & Dashboard
-  return (
-    <div className="relative min-h-screen bg-[#F1F5F9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 px-4 py-3 bg-indigo-600 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-xl border border-indigo-400 flex items-center gap-2 animate-slide-up">
-          <span className="w-2 h-2 rounded-full bg-emerald-300 animate-ping" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-      {/* Main Roadmap Overview */}
       <LevelOverviewScreen
         profile={profile}
         levelProgress={levelProgress}
@@ -251,9 +250,29 @@ export default function App() {
         }}
         onLogout={handleLogout}
       />
+    );
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#F1F5F9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200">
+      {/* Network Connectivity Status Banner (Offline / Back Online) */}
+      <NetworkStatusBanner onSyncWithStorage={syncStorageData} />
+
+      {/* Main Screen Content */}
+      <div className="flex-1 flex flex-col">
+        {renderCurrentScreen()}
+      </div>
+
+      {/* Global Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-5 right-5 z-50 px-4 py-3 bg-indigo-600 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-xl border border-indigo-400 flex items-center gap-2 animate-slide-up">
+          <span className="w-2 h-2 rounded-full bg-emerald-300 animate-ping" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* Profile & History Modal */}
-      {isProfileModalOpen && (
+      {isProfileModalOpen && profile && (
         <StudentProfileModal
           profile={profile}
           sessions={sessionHistory}
@@ -264,7 +283,7 @@ export default function App() {
       )}
 
       {/* Certificate Modal */}
-      {activeCertificateLevel && (
+      {activeCertificateLevel && profile && (
         <CertificateModal
           levelId={activeCertificateLevel}
           profile={profile}
@@ -299,12 +318,12 @@ export default function App() {
         />
       )}
 
-      {/* Kumon Worksheet PDF Print Modal */}
+      {/* Worksheet PDF Print Modal */}
       {printModalState.isOpen && (
         <KumonWorksheetPrintModal
           initialLevelId={printModalState.levelId || 'E'}
           initialWorksheetNum={printModalState.worksheetNum || 1}
-          isAdmin={profile.isAdmin || false}
+          isAdmin={profile?.isAdmin || false}
           onClose={() => setPrintModalState({ isOpen: false })}
         />
       )}

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Award, Printer, X, Sparkles, CheckCircle, ShieldCheck } from 'lucide-react';
+import { Award, Printer, Download, X, Sparkles, CheckCircle, ShieldCheck } from 'lucide-react';
 import { KumonLevelId, StudentProfile, LevelProgress } from '../types';
 import { KUMON_LEVELS } from '../data/curriculumData';
 
@@ -34,6 +34,53 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
     window.print();
   };
 
+  const handleDownloadHtml = () => {
+    if (!printRef.current) return;
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sertifikat Kelulusan Level ${levelId} - ${profile.name}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #0f172a; display: flex; flex-direction: column; align-items: center; }
+    .certificate-print-sheet { background: #fffdf5; width: 100%; max-width: 210mm; min-height: 275mm; margin: 0 auto; padding: 40px; border: 8px double #d97706; border-radius: 16px; box-sizing: border-box; }
+    @media print {
+      @page { size: A4 portrait; margin: 8mm; }
+      body { background: #ffffff; padding: 0; }
+      .certificate-print-sheet { border: 8px double #d97706 !important; margin: 0 auto; padding: 24px; border-radius: 8px; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 12px;">
+    <button onclick="window.print()" style="padding: 10px 20px; background: #4f46e5; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">
+      🖨️ Cetak / Simpan sebagai PDF (A4)
+    </button>
+  </div>
+  <div class="certificate-print-sheet">
+    ${printRef.current.innerHTML}
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Sertifikat-Level-${levelId}-${profile.name.replace(/\s+/g, '_')}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-3 sm:p-6 backdrop-blur-sm overflow-y-auto">
       <div className="flex flex-col w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto">
@@ -47,11 +94,24 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              id="download-certificate-html-btn"
+              onClick={handleDownloadHtml}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              title="Unduh file dokumen HTML sertifikat"
             >
-              <Printer className="w-4 h-4" />
-              <span>Cetak Sertifikat</span>
+              <Download className="w-4 h-4 text-emerald-600" />
+              <span>Unduh Dokumen (.html)</span>
+            </button>
+
+            <button
+              type="button"
+              id="print-certificate-pdf-btn"
+              onClick={handlePrint}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              title="Cetak atau Simpan sebagai PDF"
+            >
+              <Printer className="w-4 h-4 text-amber-300" />
+              <span>Cetak / Simpan PDF</span>
             </button>
 
             <button
@@ -67,7 +127,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
         {/* Certificate Sheet (Printable Area) */}
         <div
           ref={printRef}
-          className="p-6 sm:p-10 bg-radial from-amber-50/50 via-white to-amber-50/30 text-center relative border-8 border-double border-amber-500/60 m-3 rounded-2xl"
+          className="certificate-print-sheet p-6 sm:p-10 bg-radial from-amber-50/50 via-white to-amber-50/30 text-center relative border-8 border-double border-amber-500/60 m-3 rounded-2xl print:m-0 print:border-8 print:border-amber-600 print:shadow-none"
         >
           {/* Certificate Header */}
           <div className="flex flex-col items-center">

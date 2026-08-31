@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { 
   Printer, 
+  Download,
   X, 
   Award, 
   Calendar, 
@@ -38,6 +39,53 @@ export const StudentProgressReportModal: React.FC<StudentProgressReportModalProp
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadHtml = () => {
+    if (!printRef.current) return;
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rapor Progres Belajar - ${profile.name}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; margin: 0; padding: 24px; color: #0f172a; }
+    .student-report-print-sheet { background: #ffffff; width: 100%; max-width: 210mm; margin: 0 auto; padding: 32px; border: 1px solid #cbd5e1; border-radius: 16px; box-sizing: border-box; }
+    @media print {
+      @page { size: A4 portrait; margin: 8mm; }
+      body { background: #ffffff; padding: 0; }
+      .student-report-print-sheet { border: none; margin: 0 auto; padding: 0; border-radius: 0; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 12px;">
+    <button onclick="window.print()" style="padding: 10px 20px; background: #4f46e5; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">
+      🖨️ Cetak / Simpan sebagai PDF (A4)
+    </button>
+  </div>
+  <div class="student-report-print-sheet">
+    ${printRef.current.innerHTML}
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Rapor-Progres-Matematika-${profile.name.replace(/\s+/g, '_')}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const currentDateStr = new Date().toLocaleDateString('id-ID', {
@@ -89,10 +137,22 @@ export const StudentProgressReportModal: React.FC<StudentProgressReportModalProp
 
           <div className="flex items-center gap-2">
             <button
+              id="download-report-html-button"
+              type="button"
+              onClick={handleDownloadHtml}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 hover:text-white rounded-xl border border-slate-700 text-xs font-bold shadow-sm transition-all cursor-pointer"
+              title="Unduh file dokumen HTML resmi laporan belajar"
+            >
+              <Download className="w-4 h-4 text-emerald-400" />
+              <span>Unduh Dokumen (.html)</span>
+            </button>
+
+            <button
               id="print-report-pdf-button"
               type="button"
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 transition-all cursor-pointer"
+              title="Cetak atau Simpan sebagai PDF"
             >
               <Printer className="w-4 h-4 text-amber-300" />
               <span>Cetak / Simpan PDF</span>

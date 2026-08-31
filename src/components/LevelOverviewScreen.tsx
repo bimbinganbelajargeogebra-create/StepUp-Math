@@ -19,6 +19,7 @@ import {
   Database, 
   HardDrive, 
   BarChart3, 
+  TrendingUp,
   Printer, 
   LogOut,
   Zap,
@@ -29,6 +30,7 @@ import {
 import { KumonLevelId, StudentProfile, LevelProgress, WorksheetSessionResult } from '../types';
 import { KUMON_LEVEL_ORDER, KUMON_LEVELS } from '../data/curriculumData';
 import { PerformanceTrendChart } from './PerformanceTrendChart';
+import { DailyProgressChart } from './DailyProgressChart';
 import { AppTheme } from '../utils/storage';
 import { MathLogo } from './MathLogo';
 import { StudyStreakTracker } from './StudyStreakTracker';
@@ -65,7 +67,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [activeLevelModal, setActiveLevelModal] = useState<KumonLevelId | null>(null);
   const [trialNotice, setTrialNotice] = useState<string | null>(null);
-  const [showChart, setShowChart] = useState<boolean>(true);
+  const [analyticsTab, setAnalyticsTab] = useState<'daily' | 'trend'>('daily');
 
   const categories = [
     'Semua',
@@ -285,8 +287,53 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
           sessions={sessions} 
         />
 
-        {/* Recharts Student Performance Trend Visualization */}
-        <PerformanceTrendChart sessions={sessions} />
+        {/* Recharts Analytics Section: Daily Progress (Worksheets vs Time) & Performance Trend */}
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Visualisasi & Analitik Belajar Siswa
+              </h3>
+            </div>
+
+            <div className="flex items-center p-1 bg-slate-200/80 dark:bg-slate-800 rounded-xl gap-1 text-xs font-bold self-start sm:self-auto shadow-2xs">
+              <button
+                type="button"
+                id="tab-analytics-daily"
+                onClick={() => setAnalyticsTab('daily')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                  analyticsTab === 'daily'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>Kemajuan Harian (Lembar vs Waktu)</span>
+              </button>
+
+              <button
+                type="button"
+                id="tab-analytics-trend"
+                onClick={() => setAnalyticsTab('trend')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                  analyticsTab === 'trend'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Tren Skor & Standar SCT</span>
+              </button>
+            </div>
+          </div>
+
+          {analyticsTab === 'daily' ? (
+            <DailyProgressChart sessions={sessions} />
+          ) : (
+            <PerformanceTrendChart sessions={sessions} />
+          )}
+        </div>
 
         {/* Category Pills Filter */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
