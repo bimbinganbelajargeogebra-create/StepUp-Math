@@ -27,6 +27,7 @@ import { StudentProfileModal } from './components/StudentProfileModal';
 import { CertificateModal } from './components/CertificateModal';
 import { TeacherAdminModal } from './components/TeacherAdminModal';
 import { KumonWorksheetPrintModal } from './components/KumonWorksheetPrintModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -193,24 +194,26 @@ export default function App() {
     // Step 2: Active Worksheet Drill Practice
     if (activeSession) {
       return (
-        <WorksheetPracticeScreen
-          levelId={activeSession.levelId}
-          worksheetNum={activeSession.worksheetNum}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-          onExit={() => setActiveSession(null)}
-          onFinish={(result, isNewLevelUnlocked, unlockedLevelId) => {
-            setLevelProgress(getStoredLevelProgress());
-            setSessionHistory(getStoredSessionHistory());
-            const updatedProfile = getStoredProfile();
-            if (updatedProfile) setProfile(updatedProfile);
+        <ErrorBoundary fallbackTitle="Lembar Kerja Sedang Dimuat" onReset={() => setActiveSession(null)}>
+          <WorksheetPracticeScreen
+            levelId={activeSession.levelId}
+            worksheetNum={activeSession.worksheetNum}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            onExit={() => setActiveSession(null)}
+            onFinish={(result, isNewLevelUnlocked, unlockedLevelId) => {
+              setLevelProgress(getStoredLevelProgress());
+              setSessionHistory(getStoredSessionHistory());
+              const updatedProfile = getStoredProfile();
+              if (updatedProfile) setProfile(updatedProfile);
 
-            if (isNewLevelUnlocked && unlockedLevelId) {
-              showToast(`Luar biasa! Level ${unlockedLevelId} telah terbuka!`);
-            }
-            setActiveSession(null);
-          }}
-        />
+              if (isNewLevelUnlocked && unlockedLevelId) {
+                showToast(`Luar biasa! Level ${unlockedLevelId} telah terbuka!`);
+              }
+              setActiveSession(null);
+            }}
+          />
+        </ErrorBoundary>
       );
     }
 

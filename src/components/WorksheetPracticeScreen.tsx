@@ -54,7 +54,15 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
   onFinish,
   onExit
 }) => {
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<Question[]>(() => {
+    try {
+      const qList = generateWorksheetQuestions(levelId || '6A', worksheetNum || 1);
+      return qList && qList.length > 0 ? qList : [];
+    } catch (err) {
+      console.error('Initial question generation error:', err);
+      return [];
+    }
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [inputVal, setInputVal] = useState('');
   const [answersState, setAnswersState] = useState<{
@@ -77,18 +85,24 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [finalResult, setFinalResult] = useState<WorksheetSessionResult | null>(null);
-  const [unlockInfo, setUnlockInfo] = useState<{ isUnlocked: boolean; nextLevel?: KumonLevelId }>({
-    isUnlocked: false
+  const [unlockInfo, setUnlockInfo] = useState<{ isNewLevelUnlocked: boolean; unlockedLevelId?: KumonLevelId }>({
+    isNewLevelUnlocked: false
   });
 
-  const levelInfo = KUMON_LEVELS[levelId];
-  const standardTimeSec = levelInfo.standardTimeMinutes * 60;
+  const levelInfo = (levelId && KUMON_LEVELS[levelId]) ? KUMON_LEVELS[levelId] : KUMON_LEVELS['6A'];
+  const standardTimeSec = (levelInfo?.standardTimeMinutes || 5) * 60;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize questions
+  // Sync questions when levelId or worksheetNum changes
   useEffect(() => {
-    const qList = generateWorksheetQuestions(levelId, worksheetNum);
-    setQuestions(qList);
+    try {
+      const qList = generateWorksheetQuestions(levelId || '6A', worksheetNum || 1);
+      if (qList && qList.length > 0) {
+        setQuestions(qList);
+      }
+    } catch (err) {
+      console.error('Error generating questions on level/worksheet change:', err);
+    }
     setCurrentIndex(0);
     setInputVal('');
     setAnswersState({});
@@ -96,6 +110,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
     setIsCompleted(false);
     setShowSolutionDuringPractice(false);
 
+    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setSecondsElapsed((prev) => prev + 1);
     }, 1000);
@@ -105,7 +120,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
     };
   }, [levelId, worksheetNum]);
 
-  const currentQ = questions[currentIndex];
+  const currentQ = questions[currentIndex] || questions[0];
   const currentState = currentQ ? answersState[currentQ.id] : null;
 
   // Format seconds to mm:ss
@@ -215,10 +230,31 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
   if (!currentQ && !isCompleted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F1F5F9] dark:bg-slate-950">
-        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <span>Memuat lembar kerja...</span>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F1F5F9] dark:bg-slate-950 p-4">
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold flex flex-col items-center gap-4 text-center max-w-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <span>Menyiapkan lembar kerja Level {levelId || '6A'} #{worksheetNum || 1}...</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const qList = generateWorksheetQuestions(levelId || '6A', worksheetNum || 1);
+                setQuestions(qList);
+              }}
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              Mulai Soal
+            </button>
+            <button
+              type="button"
+              onClick={onExit}
+              className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-medium transition-all cursor-pointer"
+            >
+              Kembali
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -265,7 +301,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
             </div>
 
             {/* Unlock Notification if new level unlocked */}
-            {unlockInfo.isUnlocked && unlockInfo.nextLevel && (
+            {unlockInfo.isNewLevelUnlocked && unlockInfo.unlockedLevelId && (
               <div className="p-4 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
                   ★
@@ -273,7 +309,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                 <div>
                   <h4 className="font-bold text-emerald-900 dark:text-emerald-200 text-sm">Selamat! Level Baru Terbuka!</h4>
                   <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                    Anda telah menguasai Level {levelId} dan membuka <strong>Level {unlockInfo.nextLevel}</strong>.
+                    Anda telah menguasai Level {levelId} dan membuka <strong>Level {unlockInfo.unlockedLevelId}</strong>.
                   </p>
                 </div>
               </div>
@@ -425,7 +461,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
               <button
                 type="button"
                 id="finish-return-level-menu-btn"
-                onClick={() => onFinish(finalResult, unlockInfo.isUnlocked, unlockInfo.nextLevel)}
+                onClick={() => onFinish(finalResult, unlockInfo.isNewLevelUnlocked, unlockInfo.unlockedLevelId)}
                 className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
               >
                 <span>Kembali ke Menu Level</span>

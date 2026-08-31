@@ -7,9 +7,23 @@ interface KaTeXMathProps {
   className?: string;
 }
 
+const safeRenderToString = (tex: string, options: any): string => {
+  try {
+    if (typeof (katex as any)?.renderToString === 'function') {
+      return (katex as any).renderToString(tex, options);
+    }
+    if (typeof (katex as any)?.default?.renderToString === 'function') {
+      return (katex as any).default.renderToString(tex, options);
+    }
+  } catch (err) {
+    // Return empty to trigger fallback
+  }
+  return '';
+};
+
 export const KaTeXMath: React.FC<KaTeXMathProps> = ({ math, block = false, className = '' }) => {
   const html = useMemo(() => {
-    if (!math) return '';
+    if (!math || typeof math !== 'string') return '';
 
     // If string contains explicit LaTeX commands or math tokens, prepare it
     let cleanMath = math.trim();
@@ -26,25 +40,29 @@ export const KaTeXMath: React.FC<KaTeXMathProps> = ({ math, block = false, class
     }
 
     try {
-      return katex.renderToString(cleanMath, {
+      const rendered = safeRenderToString(cleanMath, {
         displayMode: block,
         throwOnError: false,
         strict: false,
         trust: true,
       });
+
+      if (rendered) return rendered;
+
+      // Fallback 1: try standard rendering without modifications
+      const fallbackRendered = safeRenderToString(math.trim(), {
+        displayMode: block,
+        throwOnError: false,
+        strict: false,
+        trust: true,
+      });
+
+      if (fallbackRendered) return fallbackRendered;
     } catch {
-      // Fallback: try standard rendering without \displaystyle if that was the culprit
-      try {
-        return katex.renderToString(math.trim(), {
-          displayMode: block,
-          throwOnError: false,
-          strict: false,
-          trust: true,
-        });
-      } catch {
-        return `<span class="katex-fallback font-mono text-sm">${math}</span>`;
-      }
+      // Ignored
     }
+
+    return `<span class="katex-fallback font-mono font-semibold text-base">${math}</span>`;
   }, [math, block]);
 
   return (
@@ -73,6 +91,7 @@ interface MathTextProps {
 export const MathText: React.FC<MathTextProps> = ({ text, className = '' }) => {
   const renderedContent = useMemo(() => {
     if (!text) return null;
+    if (typeof text !== 'string') return <span>{String(text)}</span>;
 
     // Check if text has $...$ or $$...$$ delimiters
     if (text.includes('$')) {

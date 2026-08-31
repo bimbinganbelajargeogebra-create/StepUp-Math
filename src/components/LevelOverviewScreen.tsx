@@ -538,8 +538,10 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                     type="button"
                     onClick={() => {
                       const lvl = activeLevelModal;
-                      setActiveLevelModal(null);
-                      onOpenPrint(lvl);
+                      if (lvl) {
+                        setActiveLevelModal(null);
+                        onOpenPrint(lvl);
+                      }
                     }}
                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
                     title="Unduh atau Cetak Lembar Kerja & Pembahasan Lengkap Level Ini"
@@ -629,8 +631,10 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                           type="button"
                           onClick={() => {
                             const lvl = activeLevelModal;
-                            setActiveLevelModal(null);
-                            onSelectWorksheet(lvl, wNum);
+                            if (lvl) {
+                              setActiveLevelModal(null);
+                              onSelectWorksheet(lvl, wNum);
+                            }
                           }}
                           className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
                         >
