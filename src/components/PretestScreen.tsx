@@ -351,11 +351,13 @@ export const PretestScreen: React.FC<PretestScreenProps> = ({
       </main>
 
       {/* Professional Status Footer */}
-      <footer className="h-10 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide transition-colors duration-200">
-        <div className="flex items-center gap-4 uppercase">
-          <span>Penyimpanan Lokal: Aktif</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-slate-300">Pretest Diagnostik 18 Level</span>
+      <footer className="py-2 sm:h-10 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex flex-col sm:flex-row items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide transition-colors duration-200 gap-1 sm:gap-0">
+        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4">
+          <span className="uppercase">Penyimpanan Lokal: Aktif</span>
+          <span className="text-slate-500 hidden sm:inline">|</span>
+          <span className="text-amber-300 font-bold">@copyright by. Pak GuruAi</span>
+          <span className="text-slate-500 hidden md:inline">|</span>
+          <span className="text-slate-300 hidden md:inline">Pretest Diagnostik 18 Level</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>

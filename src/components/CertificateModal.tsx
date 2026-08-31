@@ -186,6 +186,10 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
               </div>
             </div>
           </div>
+
+          <div className="mt-4 pt-2 border-t border-slate-100 text-center text-[10px] text-slate-400 font-semibold">
+            @copyright by. Pak GuruAI
+          </div>
         </div>
       </div>
     </div>

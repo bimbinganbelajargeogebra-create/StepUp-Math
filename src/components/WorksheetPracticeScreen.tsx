@@ -490,6 +490,10 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                 <RotateCcw className="w-4 h-4" />
                 <span>Ulangi Lembar Kerja Ini (Latihan Kecepatan)</span>
               </button>
+
+              <div className="text-center pt-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                @copyright by. Pak GuruAi
+              </div>
             </div>
           </div>
         </div>
@@ -908,11 +912,11 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
       {/* Professional Status Footer (Hidden in Focus Mode for Zero Distraction) */}
       {!isFocusMode && (
-        <footer className="h-10 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide transition-colors duration-200">
-          <div className="flex items-center gap-4 uppercase">
-            <span>Penyimpanan Lokal: Aktif</span>
-            <span className="text-slate-500">|</span>
-            <span className="text-slate-300">Level {levelId} • Target {levelInfo.standardTimeMinutes} Menit</span>
+        <footer className="py-2 sm:h-10 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex flex-col sm:flex-row items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide transition-colors duration-200 gap-1 sm:gap-0">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4">
+            <span className="uppercase">Level {levelId} • Target {levelInfo.standardTimeMinutes} Menit</span>
+            <span className="text-slate-500 hidden sm:inline">|</span>
+            <span className="text-amber-300 font-bold">@copyright by. Pak GuruAi</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>

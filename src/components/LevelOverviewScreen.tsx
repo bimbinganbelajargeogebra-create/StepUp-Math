@@ -492,14 +492,18 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
       </main>
 
       {/* Professional Status Footer */}
-      <footer className="h-12 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide mt-auto transition-colors duration-200">
-        <div className="flex items-center gap-3 sm:gap-4 uppercase">
-          <span className="flex items-center gap-1.5">
+      <footer className="py-2.5 sm:h-12 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex flex-col sm:flex-row items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide mt-auto transition-colors duration-200 gap-2 sm:gap-0">
+        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4">
+          <span className="flex items-center gap-1.5 uppercase">
             <HardDrive className="w-3.5 h-3.5 text-slate-400" />
             <span>Penyimpanan Lokal: Aktif</span>
           </span>
           <span className="text-slate-500 hidden sm:inline">|</span>
-          <span className="hidden sm:inline text-slate-300">
+          <span className="text-amber-300 font-bold">
+            @copyright by. Pak GuruAi
+          </span>
+          <span className="text-slate-500 hidden md:inline">|</span>
+          <span className="hidden md:inline text-slate-400 text-[10px]">
             {totalMastered > 0 ? `${totalMastered} Level Lulus Master` : 'Sistem Pembelajaran Mandiri Berjenjang'}
           </span>
         </div>

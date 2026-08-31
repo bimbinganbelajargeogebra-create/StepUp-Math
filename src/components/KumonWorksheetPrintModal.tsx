@@ -138,10 +138,11 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
   </style>
 </head>
 <body>
-  <div class="no-print" style="text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 12px;">
+  <div class="no-print" style="text-align: center; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
     <button onclick="window.print()" style="padding: 10px 24px; background: #4f46e5; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
       🖨️ Cetak / Simpan PDF (${modeLabel})
     </button>
+    <span style="font-size: 12px; color: #475569; font-weight: 600;">@copyright by. Pak GuruAI</span>
   </div>
   ${container.innerHTML}
 </body>
@@ -671,11 +672,14 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
               </div>
 
               {/* 4. Footer Standard */}
-              <div className="mt-4 pt-2 border-t-2 border-black flex items-center justify-between text-[10px] text-slate-700 font-bold">
+              <div className="mt-4 pt-2 border-t-2 border-black flex flex-col sm:flex-row items-center justify-between text-[10px] text-black font-bold gap-1">
                 <div>
                   StepUp Math • {printMode === 'full_solutions' ? 'Kunci & Pembahasan' : 'Lembar Mandiri'} Level {sheet.levelId} (Lembar {sheet.worksheetNum} / 10)
                 </div>
-                <div>
+                <div className="font-extrabold text-black tracking-wide">
+                  @copyright by. Pak GuruAI
+                </div>
+                <div className="text-slate-700">
                   Target Standar Waktu: {lvlInfo.standardTimeMinutes} Menit &bull; 100% Benar
                 </div>
               </div>

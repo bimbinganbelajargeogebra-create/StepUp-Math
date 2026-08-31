@@ -448,8 +448,10 @@ export const StudentProgressReportModal: React.FC<StudentProgressReportModalProp
             </div>
 
             {/* Bottom print watermark */}
-            <div className="mt-5 text-center text-[9px] text-slate-400 uppercase tracking-widest">
-              STEPUP MATH • AUTOMATED STUDENT PROGRESS REPORT • DOKUMEN RESMI HASIL LATIHAN MANDIRI
+            <div className="mt-5 flex items-center justify-between text-[9px] text-slate-500 uppercase tracking-wider font-semibold border-t border-slate-200 pt-2">
+              <span>STEPUP MATH • AUTOMATED STUDENT PROGRESS REPORT</span>
+              <span className="font-bold text-slate-800">@copyright by. Pak GuruAI</span>
+              <span>DOKUMEN RESMI HASIL LATIHAN MANDIRI</span>
             </div>
           </div>
         </div>

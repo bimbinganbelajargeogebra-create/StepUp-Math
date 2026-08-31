@@ -535,9 +535,11 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
       <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 py-6 px-4 sm:px-8 bg-white dark:bg-slate-900 text-xs text-slate-500 dark:text-slate-400 text-center transition-colors">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <MathLogo size="sm" showText subtitle="Belajar Mandiri Berbasis Kecepatan & Ketelitian" />
-          <p className="text-[11px]">
-            © {new Date().getFullYear()} StepUp Math Indonesia • Sistem Pembelajaran Mandiri Matematika Berjenjang
-          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-[11px]">
+            <span>© {new Date().getFullYear()} StepUp Math Indonesia</span>
+            <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
+            <span className="font-bold text-slate-700 dark:text-slate-200">@copyright by. Pak GuruAi</span>
+          </div>
         </div>
       </footer>
     </div>
