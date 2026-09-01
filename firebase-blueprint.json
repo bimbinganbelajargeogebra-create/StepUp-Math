@@ -3,6 +3,36 @@
   "title": "StepUpMathDatabaseSchema",
   "description": "Firebase Firestore Database Schema for StepUp Math Multi-Level Learning Platform",
   "entities": {
+    "accounts": {
+      "title": "User Account & Registration",
+      "description": "Registered student account credentials and approval status",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string", "description": "Unique username (lowercase)" },
+        "name": { "type": "string", "description": "Student full name" },
+        "password": { "type": "string", "description": "Hashed/stored account password" },
+        "grade": { "type": "string", "description": "Grade / Class level" },
+        "school": { "type": "string", "description": "School name" },
+        "avatar": { "type": "string", "description": "Avatar icon string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Admin review status" },
+        "role": { "type": "string", "enum": ["student", "admin"], "description": "User role" },
+        "createdAt": { "type": "number", "description": "Creation timestamp" },
+        "updatedAt": { "type": "number", "description": "Last update timestamp" },
+        "approvedAt": { "type": "number", "description": "Approval timestamp" },
+        "rejectedAt": { "type": "number", "description": "Rejection timestamp" },
+        "rejectionReason": { "type": "string", "description": "Reason for rejection if rejected" },
+        "reviewedBy": { "type": "string", "description": "Admin name who approved/rejected" },
+        "startingLevel": { "type": "string", "description": "Starting Kumon level" },
+        "currentLevel": { "type": "string", "description": "Current active level" },
+        "pretestCompleted": { "type": "boolean", "description": "Whether pretest is completed" },
+        "totalWorksheetsCompleted": { "type": "number", "description": "Total worksheets finished" },
+        "totalPoints": { "type": "number", "description": "Total points accumulated" },
+        "streakDays": { "type": "number", "description": "Consecutive study streak days" },
+        "lastStudyDate": { "type": "string", "description": "Last study date YYYY-MM-DD" },
+        "levelProgress": { "type": "object", "description": "Map of level progress" }
+      },
+      "required": ["username", "name", "status", "role", "createdAt"]
+    },
     "users": {
       "title": "User",
       "description": "Student or Teacher/Admin user profile",

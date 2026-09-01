@@ -71,7 +71,37 @@ export interface LevelProgress {
   masteryDate?: number;
 }
 
+export type AccountStatus = 'pending' | 'approved' | 'rejected';
+
+export interface UserAccount {
+  username: string; // unique lowercase key
+  name: string;
+  password?: string;
+  grade: string;
+  school?: string;
+  avatar: string;
+  status: AccountStatus;
+  role: 'student' | 'admin';
+  createdAt: number;
+  updatedAt?: number;
+  approvedAt?: number;
+  rejectedAt?: number;
+  rejectionReason?: string;
+  reviewedBy?: string;
+  
+  // Linked student learning progress
+  startingLevel?: KumonLevelId | null;
+  currentLevel?: KumonLevelId;
+  pretestCompleted?: boolean;
+  totalWorksheetsCompleted?: number;
+  totalPoints?: number;
+  streakDays?: number;
+  lastStudyDate?: string;
+  levelProgress?: Record<KumonLevelId, LevelProgress>;
+}
+
 export interface StudentProfile {
+  username?: string;
   name: string;
   grade: string;
   school?: string;

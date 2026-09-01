@@ -1,12 +1,12 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import firebaseConfigJson from '../../firebase-applet-config.json';
 
 // Firebase configuration from firebase-applet-config.json with optional env overrides
 const metaEnv = (import.meta as unknown as { env?: Record<string, string> })?.env || {};
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: metaEnv.VITE_FIREBASE_API_KEY || firebaseConfigJson.apiKey,
   authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigJson.authDomain,
   projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || firebaseConfigJson.projectId,
@@ -23,12 +23,15 @@ export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getA
 export const auth = getAuth(app);
 
 // Initialize Firestore
-const databaseId = firebaseConfigJson.firestoreDatabaseId && firebaseConfigJson.firestoreDatabaseId !== '(default)'
+// In Firebase, standard projects use '(default)'. If databaseId matches projectId or is '(default)', use default getFirestore(app)
+const customDbId = (firebaseConfigJson.firestoreDatabaseId && 
+  firebaseConfigJson.firestoreDatabaseId !== '(default)' && 
+  firebaseConfigJson.firestoreDatabaseId !== firebaseConfig.projectId)
   ? firebaseConfigJson.firestoreDatabaseId
   : undefined;
 
-export const db: Firestore = databaseId 
-  ? getFirestore(app, databaseId)
+export const db: Firestore = customDbId 
+  ? getFirestore(app, customDbId)
   : getFirestore(app);
 
 // Ensure anonymous authentication for seamless cloud sync
@@ -50,7 +53,7 @@ export async function ensureFirebaseAuth(): Promise<User | null> {
             currentUser = userCred.user;
             resolve(userCred.user);
           } catch (err) {
-            console.warn('Anonymous Firebase sign-in notice (offline mode available):', err);
+            console.warn('Anonymous Firebase sign-in notice (unauthenticated rules active):', err);
             resolve(null);
           }
         }
@@ -61,9 +64,68 @@ export async function ensureFirebaseAuth(): Promise<User | null> {
   return authInitPromise;
 }
 
+/**
+ * Diagnostic tool to check real-time connection to Firebase Firestore
+ */
+export async function testFirebaseConnection(): Promise<{
+  connected: boolean;
+  message: string;
+  projectId: string;
+  database: string;
+  latencyMs: number;
+}> {
+  const startTime = Date.now();
+  try {
+    // 1. Try to ensure auth
+    await ensureFirebaseAuth();
+    
+    // 2. Perform write/read ping on _connection_test collection
+    const testDocRef = doc(db, '_connection_test', 'status_ping');
+    await setDoc(testDocRef, {
+      lastPing: serverTimestamp(),
+      clientTimestamp: Date.now(),
+      appName: 'StepUp Kumon Math',
+      platform: 'web'
+    }, { merge: true });
+
+    const snap = await getDoc(testDocRef);
+    const latencyMs = Date.now() - startTime;
+
+    if (snap.exists()) {
+      return {
+        connected: true,
+        message: `Terhubung ke Firebase Firestore (${latencyMs}ms)`,
+        projectId: firebaseConfig.projectId,
+        database: customDbId || '(default)',
+        latencyMs
+      };
+    } else {
+      return {
+        connected: false,
+        message: 'Gagal memverifikasi dokumen Firestore',
+        projectId: firebaseConfig.projectId,
+        database: customDbId || '(default)',
+        latencyMs
+      };
+    }
+  } catch (error: unknown) {
+    const latencyMs = Date.now() - startTime;
+    console.error('Firebase connection test error:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Koneksi Firestore gagal';
+    return {
+      connected: false,
+      message: `Gagal terhubung ke Firebase: ${errorMsg}`,
+      projectId: firebaseConfig.projectId,
+      database: customDbId || '(default)',
+      latencyMs
+    };
+  }
+}
+
 // Initial trigger on load
 ensureFirebaseAuth().catch(() => {
   // Graceful fallback to offline local mode
 });
 
 export default app;
+

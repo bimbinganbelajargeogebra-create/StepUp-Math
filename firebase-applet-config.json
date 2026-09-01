@@ -3,7 +3,7 @@
   "appId": "1:447527272047:web:e576f3ae8ba55230c4579a",
   "apiKey": "AIzaSyBAr8RM8pU3MSDg9IXuXPZKoPbAfW31sYY",
   "authDomain": "stepup-math-6ef12.firebaseapp.com",
-  "firestoreDatabaseId": "stepup-math-6ef12",
+  "firestoreDatabaseId": "(default)",
   "storageBucket": "stepup-math-6ef12.firebasestorage.app",
   "messagingSenderId": "300816594152",
   "measurementId": "",

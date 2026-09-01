@@ -2,56 +2,49 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-    
-    // User profile access
+    // User profile and subcollections access
     match /users/{userId} {
-      allow read: if true;
-      allow write: if isAuthenticated() && (request.auth.uid == userId || resource == null);
+      allow read, write: if true;
       
-      // Subcollections for user data
       match /levelProgress/{levelId} {
-        allow read: if true;
-        allow write: if isAuthenticated() && (request.auth.uid == userId || resource == null);
+        allow read, write: if true;
       }
       
       match /sessions/{sessionId} {
-        allow read: if true;
-        allow write: if isAuthenticated() && (request.auth.uid == userId || resource == null);
+        allow read, write: if true;
       }
       
       match /pretest/{pretestId} {
-        allow read: if true;
-        allow write: if isAuthenticated() && (request.auth.uid == userId || resource == null);
+        allow read, write: if true;
       }
     }
     
     // Root level collections for cross-device sync & leaderboard
     match /levelProgress/{progressId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+      allow read, write: if true;
     }
     
     match /sessionHistory/{sessionId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+      allow read, write: if true;
     }
     
     match /pretestResults/{resultId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+      allow read, write: if true;
     }
     
+    // User accounts and registration requests
+    match /accounts/{accountUsername} {
+      allow read, write: if true;
+    }
+
+    // Ping / Diagnostic connection test collection
+    match /_connection_test/{docId} {
+      allow read, write: if true;
+    }
+
     // Default fallback
     match /{document=**} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if true;
     }
   }
 }

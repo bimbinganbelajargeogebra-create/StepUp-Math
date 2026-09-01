@@ -3,7 +3,8 @@ import {
   StudentProfile, 
   LevelProgress, 
   WorksheetSessionResult, 
-  PretestResult 
+  PretestResult,
+  UserAccount 
 } from '../types';
 import { KUMON_LEVEL_ORDER } from '../data/curriculumData';
 import { FirebaseSyncService } from '../services/firebaseSync';
@@ -14,6 +15,7 @@ const STORAGE_KEYS = {
   SESSION_HISTORY: 'stepup_math_session_history',
   PRETEST_RESULT: 'stepup_math_pretest_result',
   ADMIN_SETTINGS: 'stepup_math_admin_settings',
+  ACCOUNTS_CACHE: 'stepup_math_registered_accounts',
   THEME: 'stepup_math_theme'
 };
 
@@ -373,3 +375,48 @@ export function importDeviceBackupJSON(jsonString: string): boolean {
     return false;
   }
 }
+
+// Local accounts cache helpers for offline-first resilience
+export function getStoredAccounts(): UserAccount[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.ACCOUNTS_CACHE);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error('Failed to load stored accounts cache', e);
+    return [];
+  }
+}
+
+export function saveStoredAccounts(accounts: UserAccount[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.ACCOUNTS_CACHE, JSON.stringify(accounts));
+  } catch (e) {
+    console.error('Failed to save stored accounts cache', e);
+  }
+}
+
+export function getStoredAccountByUsername(username: string): UserAccount | null {
+  if (!username) return null;
+  const accounts = getStoredAccounts();
+  const clean = username.trim().toLowerCase();
+  return accounts.find(a => a.username.toLowerCase() === clean) || null;
+}
+
+export function upsertStoredAccount(account: UserAccount): void {
+  try {
+    const accounts = getStoredAccounts();
+    const clean = account.username.trim().toLowerCase();
+    const idx = accounts.findIndex(a => a.username.toLowerCase() === clean);
+    if (idx >= 0) {
+      accounts[idx] = { ...accounts[idx], ...account };
+    } else {
+      accounts.unshift(account);
+    }
+    saveStoredAccounts(accounts);
+  } catch (e) {
+    console.error('Failed to upsert stored account', e);
+  }
+}
+

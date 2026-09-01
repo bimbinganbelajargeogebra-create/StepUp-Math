@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   Printer,
   FileSpreadsheet,
-  Zap
+  Zap,
+  Building2
 } from 'lucide-react';
 import { StudentProfile, WorksheetSessionResult, PretestResult } from '../types';
 import { KUMON_LEVELS } from '../data/curriculumData';
@@ -163,6 +164,68 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 )}
               </div>
             )}
+
+            {/* Status Akun Siswa Card */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Status Akun & Informasi Siswa</span>
+                </div>
+                <div>
+                  {profile.isAdmin ? (
+                    <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 text-[10px] font-extrabold rounded-full flex items-center gap-1 border border-emerald-300 dark:border-emerald-800">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Admin Pengajar
+                    </span>
+                  ) : profile.isTrial ? (
+                    <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 text-[10px] font-extrabold rounded-full flex items-center gap-1 border border-amber-300 dark:border-amber-800">
+                      <Clock className="w-3 h-3" />
+                      Mode Trial
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 text-[10px] font-extrabold rounded-full flex items-center gap-1 border border-emerald-300 dark:border-emerald-800">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Disetujui & Aktif (Cloud)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                {profile.username && (
+                  <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold">Username</span>
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate block">
+                      @{profile.username}
+                    </span>
+                  </div>
+                )}
+
+                <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Jenjang / Kelas</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">
+                    {profile.grade}
+                  </span>
+                </div>
+
+                {profile.school && (
+                  <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold">Asal Sekolah</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">
+                      {profile.school}
+                    </span>
+                  </div>
+                )}
+
+                <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Tipe Akun</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {profile.isAdmin ? 'Master Admin' : profile.isTrial ? 'Trial Sementara' : 'Siswa Reguler'}
+                  </span>
+                </div>
+              </div>
+            </div>
 
             {/* Quick Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

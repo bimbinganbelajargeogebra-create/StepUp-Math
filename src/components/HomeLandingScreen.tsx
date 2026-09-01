@@ -199,8 +199,8 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">1.800+ Soal Bertingkat</div>
                 </div>
                 <div className="space-y-0.5">
-                  <div className="text-lg sm:text-xl font-black text-amber-500">100% Bebas</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Penyimpanan di Perangkat</div>
+                  <div className="text-lg sm:text-xl font-black text-amber-500">Firebase</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Cloud Database & Akun</div>
                 </div>
               </div>
             </div>
