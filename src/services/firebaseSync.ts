@@ -20,7 +20,9 @@ import {
   WorksheetSessionResult, 
   PretestResult,
   UserAccount,
-  AccountStatus
+  AccountStatus,
+  UnlockedBadge,
+  ReflectionJournalEntry
 } from '../types';
 import { 
   getStoredAccounts, 
@@ -841,7 +843,119 @@ export class FirebaseDatabaseService {
   }
 
   /**
-   * Reset all data in Firebase Firestore for the active user
+   * Save or sync student badges in Database
+   */
+  static async syncBadgesToCloud(badges: UnlockedBadge[], studentUsername?: string): Promise<boolean> {
+    try {
+      const user = await ensureFirebaseAuth();
+      if (!user) return false;
+
+      // 1. User doc update
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, {
+        badges,
+        badgesCount: badges.length,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      // 2. Global badge collection if username exists
+      if (studentUsername) {
+        const badgeDocRef = doc(db, 'studentBadges', `${studentUsername.toLowerCase()}`);
+        await setDoc(badgeDocRef, {
+          userId: user.uid,
+          username: studentUsername.toLowerCase(),
+          badges,
+          badgesCount: badges.length,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Database syncBadgesToCloud error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Save or sync reflection journal entry to Database
+   */
+  static async syncReflectionJournalToCloud(entry: ReflectionJournalEntry): Promise<boolean> {
+    try {
+      const user = await ensureFirebaseAuth();
+      if (!user) return false;
+
+      const journalPayload = {
+        ...entry,
+        userId: user.uid,
+        createdAt: serverTimestamp()
+      };
+
+      // 1. Save in user private subcollection
+      const userJournalRef = doc(db, 'users', user.uid, 'journals', entry.id);
+      await setDoc(userJournalRef, journalPayload);
+
+      // 2. Save in global reflection journals collection for teacher review
+      const rootJournalRef = doc(db, 'reflectionJournals', `${user.uid}_${entry.id}`);
+      await setDoc(rootJournalRef, journalPayload);
+
+      return true;
+    } catch (error) {
+      console.error('Database syncReflectionJournalToCloud error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete reflection journal entry from Database
+   */
+  static async deleteReflectionJournalInCloud(journalId: string): Promise<boolean> {
+    try {
+      const user = await ensureFirebaseAuth();
+      if (!user) return false;
+
+      const userJournalRef = doc(db, 'users', user.uid, 'journals', journalId);
+      await deleteDoc(userJournalRef);
+
+      const rootJournalRef = doc(db, 'reflectionJournals', `${user.uid}_${journalId}`);
+      await deleteDoc(rootJournalRef);
+
+      return true;
+    } catch (error) {
+      console.error('Database deleteReflectionJournalInCloud error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Real-time subscription for Reflection Journals
+   */
+  static subscribeToJournals(
+    onUpdate: (journals: ReflectionJournalEntry[]) => void
+  ): Unsubscribe | null {
+    let unsubscribeJournals: Unsubscribe | null = null;
+
+    ensureFirebaseAuth().then((user) => {
+      if (!user) return;
+
+      const journalsRef = collection(db, 'users', user.uid, 'journals');
+      const q = query(journalsRef, orderBy('timestamp', 'desc'), limit(100));
+
+      unsubscribeJournals = onSnapshot(q, (snapshot) => {
+        const journals: ReflectionJournalEntry[] = snapshot.docs.map(docSnap => docSnap.data() as ReflectionJournalEntry);
+        onUpdate(journals);
+      }, (err) => {
+        console.warn('Database journals snapshot notice:', err);
+      });
+    });
+
+    return () => {
+      if (unsubscribeJournals) unsubscribeJournals();
+    };
+  }
+
+  /**
+   * Reset all data in Database for the active user
    */
   static async resetAllUserData(): Promise<boolean> {
     try {
@@ -856,7 +970,7 @@ export class FirebaseDatabaseService {
 
       return true;
     } catch (error) {
-      console.error('Firebase resetAllUserData error:', error);
+      console.error('Database resetAllUserData error:', error);
       return false;
     }
   }

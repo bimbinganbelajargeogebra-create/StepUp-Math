@@ -319,7 +319,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
           <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
               <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>Semua level, nilai, dan riwayat belajar tersimpan & tersinkronkan di Firebase Firestore.</span>
+              <span>Semua level, nilai, dan riwayat belajar tersimpan & tersinkronkan di database.</span>
             </div>
 
             {onLogout && (

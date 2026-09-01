@@ -487,7 +487,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
 
           <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/90 rounded-full text-[11px] text-indigo-200 border border-indigo-900/50">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Database: Firebase Cloud Firestore</span>
+            <span>Database: Sinkronisasi Database Aktif</span>
           </div>
         </div>
 
@@ -590,7 +590,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
               </div>
 
               <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                Pendaftaran akun Anda telah tersimpan di Firebase Firestore. Silakan hubungi Guru / Admin untuk menyetujui (Approve) akun Anda di Panel Guru.
+                Pendaftaran akun Anda telah tersimpan di database. Silakan hubungi Guru / Admin untuk menyetujui (Approve) akun Anda di Panel Guru.
               </p>
 
               <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -937,7 +937,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                 {isSubmittingReg ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Mendaftarkan Akun ke Firebase...</span>
+                    <span>Mendaftarkan Akun ke Database...</span>
                   </>
                 ) : (
                   <>
@@ -1079,7 +1079,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                         <div>
                           <strong className="block">Menunggu Persetujuan Guru / Pengajar</strong>
                           <span>
-                            Pendaftaran Anda sudah tersimpan di Firebase. Hubungi guru atau pengajar bimbingan belajar untuk melakukan approval di Panel Admin.
+                            Pendaftaran Anda sudah tersimpan di database. Hubungi guru atau pengajar bimbingan belajar untuk melakukan approval di Panel Admin.
                           </span>
                         </div>
                       </div>

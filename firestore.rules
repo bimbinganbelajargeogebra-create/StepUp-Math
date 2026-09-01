@@ -31,6 +31,14 @@ service cloud.firestore {
     match /pretestResults/{resultId} {
       allow read, write: if true;
     }
+
+    match /reflectionJournals/{journalId} {
+      allow read, write: if true;
+    }
+
+    match /studentBadges/{studentId} {
+      allow read, write: if true;
+    }
     
     // User accounts and registration requests
     match /accounts/{accountUsername} {

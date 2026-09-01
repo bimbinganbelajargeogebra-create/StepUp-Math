@@ -177,7 +177,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
 
   // Handle Delete Account
   const handleDeleteAccount = async (username: string) => {
-    if (!window.confirm(`Yakin ingin menghapus akun @${username} secara permanen dari database Firebase?`)) {
+    if (!window.confirm(`Yakin ingin menghapus akun @${username} secara permanen dari database?`)) {
       return;
     }
     setProcessingUsername(username);
@@ -194,13 +194,13 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
 
   const handleCloudUploadAll = async () => {
     setIsCloudSyncing(true);
-    setCloudSyncStatus('Mengunggah data profil dan progres ke Firebase Firestore...');
+    setCloudSyncStatus('Mengunggah data profil dan progres ke database...');
     try {
       if (profile) {
         await FirebaseSyncService.syncProfileToCloud(profile);
       }
       await FirebaseSyncService.syncLevelProgressToCloud(levelProgress);
-      setCloudSyncStatus('✓ Data profil dan level berhasil disinkronkan ke Firebase Cloud!');
+      setCloudSyncStatus('✓ Data profil dan level berhasil disinkronkan ke database cloud!');
     } catch (err) {
       console.error(err);
       setCloudSyncStatus('Gagal menyinkronkan data ke cloud. Periksa koneksi internet.');
@@ -211,7 +211,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
 
   const handleCloudDownloadAll = async () => {
     setIsCloudSyncing(true);
-    setCloudSyncStatus('Memeriksa dan memuat data dari Firebase Firestore...');
+    setCloudSyncStatus('Memeriksa dan memuat data dari database...');
     try {
       const cloudData = await FirebaseSyncService.loadAllUserDataFromCloud();
       if (cloudData) {
@@ -226,13 +226,13 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
         if (cloudData.pretestResult) {
           savePretestResult(cloudData.pretestResult);
         }
-        setCloudSyncStatus('✓ Berhasil memulihkan data siswa dari Firebase Firestore!');
+        setCloudSyncStatus('✓ Berhasil memulihkan data siswa dari database cloud!');
       } else {
-        setCloudSyncStatus('Belum ada data cadangan di Firebase Firestore untuk akun ini.');
+        setCloudSyncStatus('Belum ada data cadangan di database untuk akun ini.');
       }
     } catch (err) {
       console.error(err);
-      setCloudSyncStatus('Gagal memuat data dari Firebase. Pastikan koneksi aktif.');
+      setCloudSyncStatus('Gagal memuat data dari database. Pastikan koneksi aktif.');
     } finally {
       setIsCloudSyncing(false);
     }
@@ -249,7 +249,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
       setFirebaseTestResult({
         connected: false,
         message: err instanceof Error ? err.message : 'Uji koneksi gagal',
-        projectId: 'stepup-math-6ef12',
+        projectId: 'database-service',
         database: '(default)',
         latencyMs: 0
       });
@@ -368,7 +368,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
               <div className="flex items-center gap-2">
                 <h3 className="font-extrabold text-base text-white">Panel Pengajar / Guru Admin</h3>
                 <span className="px-2 py-0.5 bg-indigo-800/80 text-indigo-200 text-[10px] font-bold rounded-md border border-indigo-700">
-                  Firebase Cloud Live
+                  Database Cloud Live
                 </span>
               </div>
               <p className="text-xs text-indigo-300">Persetujuan Siswa, Kontrol 18 Level & Manajemen Database</p>
@@ -834,7 +834,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
           {/* TAB 3: BACKUP & CLOUD */}
           {activeTab === 'backup' && (
             <div className="space-y-4">
-              {/* Firebase Cloud Firestore Card */}
+              {/* Database Cloud Card */}
               <div className="p-4 bg-linear-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/40 border border-indigo-200 dark:border-indigo-800 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -842,8 +842,8 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                       <Cloud className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-indigo-950 dark:text-indigo-200">Firebase Cloud Backend (Firestore)</h4>
-                      <p className="text-[11px] text-indigo-700 dark:text-indigo-300">Sinkronisasi & database akun siswa terpusat</p>
+                      <h4 className="text-sm font-bold text-indigo-950 dark:text-indigo-200">Database Cloud Terpusat</h4>
+                      <p className="text-[11px] text-indigo-700 dark:text-indigo-300">Sinkronisasi & basis data akun siswa terpusat</p>
                     </div>
                   </div>
                   <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-300">
@@ -852,7 +852,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                 </div>
 
                 <p className="text-xs text-slate-600 dark:text-slate-400">
-                  Data latihan, profil, registrasi akun siswa, dan hasil pretest otomatis tersimpan di Firebase Cloud Firestore.
+                  Data latihan, profil, registrasi akun siswa, dan hasil pretest otomatis tersimpan di database cloud.
                 </p>
 
                 {cloudSyncStatus && (
@@ -869,7 +869,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                     className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
                   >
                     <Activity className={`w-3.5 h-3.5 ${isTestingFirebase ? 'animate-spin' : ''}`} />
-                    <span>{isTestingFirebase ? 'Menguji Ping...' : 'Uji Koneksi Firebase'}</span>
+                    <span>{isTestingFirebase ? 'Menguji Ping...' : 'Uji Koneksi Database'}</span>
                   </button>
 
                   <button

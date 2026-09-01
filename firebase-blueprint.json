@@ -112,6 +112,40 @@
         "breakdown": { "type": "object", "description": "Per-level performance breakdown" }
       },
       "required": ["id", "userId", "assignedLevel", "completedAt"]
+    },
+    "reflectionJournals": {
+      "title": "Reflection Journal Entry",
+      "description": "Student reflection notes written after completing worksheets",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique journal entry ID" },
+        "userId": { "type": "string", "description": "Student user ID" },
+        "studentName": { "type": "string", "description": "Student full name" },
+        "studentUsername": { "type": "string", "description": "Student username" },
+        "timestamp": { "type": "number", "description": "Entry creation timestamp" },
+        "dateStr": { "type": "string", "description": "Date YYYY-MM-DD" },
+        "levelId": { "type": "string", "description": "Level ID" },
+        "worksheetNum": { "type": "number", "description": "Worksheet number 1-10" },
+        "score": { "type": "number", "description": "Score 0-100" },
+        "timeSpentSeconds": { "type": "number", "description": "Practice duration in seconds" },
+        "reflectionText": { "type": "string", "description": "What the student learned today" },
+        "feeling": { "type": "string", "description": "Self-assessment feeling tag" },
+        "keyTakeaway": { "type": "string", "description": "Key math formula or takeaway" }
+      },
+      "required": ["id", "studentName", "timestamp", "levelId", "worksheetNum", "reflectionText"]
+    },
+    "studentBadges": {
+      "title": "Student Achievement Badges",
+      "description": "Gamification milestone badges earned by students",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Student user ID" },
+        "username": { "type": "string", "description": "Student username" },
+        "badges": { "type": "array", "description": "List of unlocked badge objects" },
+        "badgesCount": { "type": "number", "description": "Total count of unlocked badges" },
+        "updatedAt": { "type": "number", "description": "Last updated timestamp" }
+      },
+      "required": ["userId", "badges", "badgesCount"]
     }
   }
 }

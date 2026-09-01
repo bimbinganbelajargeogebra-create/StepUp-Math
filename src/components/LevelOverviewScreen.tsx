@@ -27,13 +27,16 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import { KumonLevelId, StudentProfile, LevelProgress, WorksheetSessionResult } from '../types';
+import { KumonLevelId, StudentProfile, LevelProgress, WorksheetSessionResult, UnlockedBadge, ReflectionJournalEntry } from '../types';
 import { KUMON_LEVEL_ORDER, KUMON_LEVELS } from '../data/curriculumData';
 import { PerformanceTrendChart } from './PerformanceTrendChart';
 import { DailyProgressChart } from './DailyProgressChart';
-import { AppTheme } from '../utils/storage';
+import { AppTheme, getStoredBadges, getStoredReflectionJournals } from '../utils/storage';
 import { MathLogo } from './MathLogo';
 import { StudyStreakTracker } from './StudyStreakTracker';
+import { BadgeShowcaseModal } from './BadgeShowcaseModal';
+import { ReflectionJournalModal } from './ReflectionJournalModal';
+import { BADGE_DEFINITIONS } from '../data/badgesData';
 
 interface LevelOverviewScreenProps {
   profile: StudentProfile;
@@ -68,6 +71,18 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
   const [activeLevelModal, setActiveLevelModal] = useState<KumonLevelId | null>(null);
   const [trialNotice, setTrialNotice] = useState<string | null>(null);
   const [analyticsTab, setAnalyticsTab] = useState<'daily' | 'trend'>('daily');
+  
+  // Gamification & Reflection Journal state
+  const [isBadgesModalOpen, setIsBadgesModalOpen] = useState(false);
+  const [isJournalsModalOpen, setIsJournalsModalOpen] = useState(false);
+  const [unlockedBadges, setUnlockedBadges] = useState<UnlockedBadge[]>(() => getStoredBadges());
+  const [journals, setJournals] = useState<ReflectionJournalEntry[]>(() => getStoredReflectionJournals());
+
+  // Keep badges and journals synced
+  const refreshGamificationData = () => {
+    setUnlockedBadges(getStoredBadges());
+    setJournals(getStoredReflectionJournals());
+  };
 
   const categories = [
     'Semua',
@@ -288,6 +303,77 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
           sessions={sessions} 
         />
 
+        {/* Milestone Badges & Reflection Journal Quick Cards Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Lencana Pencapaian Card */}
+          <div 
+            id="badge-showcase-card"
+            onClick={() => {
+              refreshGamificationData();
+              setIsBadgesModalOpen(true);
+            }}
+            className="p-5 bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-amber-200 dark:border-amber-900/50 shadow-xs hover:shadow-md hover:border-amber-400 dark:hover:border-amber-700 transition-all cursor-pointer flex items-center justify-between gap-4 group"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shadow-md shadow-amber-500/30 shrink-0 group-hover:scale-105 transition-transform">
+                🏆
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                    Lencana Pencapaian
+                  </h3>
+                  <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-black rounded-full border border-amber-300 dark:border-amber-800">
+                    {unlockedBadges.length} / {BADGE_DEFINITIONS.length}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Target milestone 100 lembar kerja, streak 7 hari, dan penguasaan level.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shrink-0 shadow-xs flex items-center gap-1">
+              <span>Buka</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          {/* Jurnal Refleksi Siswa Card */}
+          <div 
+            id="reflection-journal-card"
+            onClick={() => {
+              refreshGamificationData();
+              setIsJournalsModalOpen(true);
+            }}
+            className="p-5 bg-gradient-to-br from-indigo-500/10 via-white to-purple-500/5 dark:from-indigo-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-indigo-200 dark:border-indigo-900/50 shadow-xs hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-700 transition-all cursor-pointer flex items-center justify-between gap-4 group"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-2xl shadow-md shadow-indigo-600/30 shrink-0 group-hover:scale-105 transition-transform">
+                📖
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                    Jurnal &amp; Catatan Belajar
+                  </h3>
+                  <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 text-[10px] font-black rounded-full border border-indigo-300 dark:border-indigo-800">
+                    {journals.length} Catatan
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Catatan mandiri materi yang baru dipelajari setelah menyelesaikan lembar kerja.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shrink-0 shadow-xs flex items-center gap-1">
+              <span>Jurnal</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </div>
+          </div>
+        </div>
+
         {/* Recharts Analytics Section: Daily Progress (Worksheets vs Time) & Performance Trend */}
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
@@ -496,7 +582,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4">
           <span className="flex items-center gap-1.5 uppercase text-indigo-200">
             <Database className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Database: Firebase Firestore Aktif</span>
+            <span>Database: Sinkronisasi Database Aktif</span>
           </span>
           <span className="text-slate-500 hidden sm:inline">|</span>
           <span className="text-amber-300 font-bold">
@@ -509,7 +595,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-          <span className="text-slate-300 uppercase tracking-wider text-[10px]">FIREBASE ONLINE</span>
+          <span className="text-slate-300 uppercase tracking-wider text-[10px]">DATABASE ONLINE</span>
         </div>
       </footer>
 
@@ -690,6 +776,36 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
             </div>
           </div>
         </div>
+      )}
+      {/* Badge Showcase Modal */}
+      {isBadgesModalOpen && (
+        <BadgeShowcaseModal
+          profile={profile}
+          sessions={sessions}
+          levelProgress={levelProgress}
+          journals={journals}
+          unlockedBadges={unlockedBadges}
+          onClose={() => {
+            setIsBadgesModalOpen(false);
+            refreshGamificationData();
+          }}
+        />
+      )}
+
+      {/* Reflection Journal Modal */}
+      {isJournalsModalOpen && (
+        <ReflectionJournalModal
+          profile={profile}
+          journals={journals}
+          onUpdateJournals={(updated) => {
+            setJournals(updated);
+            refreshGamificationData();
+          }}
+          onClose={() => {
+            setIsJournalsModalOpen(false);
+            refreshGamificationData();
+          }}
+        />
       )}
     </div>
   );

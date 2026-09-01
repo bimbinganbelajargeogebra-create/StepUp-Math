@@ -117,6 +117,65 @@ export interface StudentProfile {
   totalPoints: number;
   streakDays: number;
   lastStudyDate: string; // YYYY-MM-DD
+  badgesCount?: number;
+  journalCount?: number;
+}
+
+export type BadgeId = 
+  | 'first_step'         // 1 lembar kerja pertama selesai
+  | 'first_ten'          // 10 lembar kerja selesai
+  | 'quarter_century'    // 25 lembar kerja selesai
+  | 'half_century'       // 50 lembar kerja selesai
+  | 'centurion_100'      // 100 lembar kerja selesai (Milestone Utama)
+  | 'streak_3'           // Belajar 3 hari berturut-turut
+  | 'streak_7'           // Belajar 7 hari berturut-turut (Disiplin Mingguan)
+  | 'streak_14'          // Belajar 14 hari berturut-turut
+  | 'streak_30'          // Belajar 30 hari berturut-turut (Master Konsistensi)
+  | 'perfect_score'      // Meraih nilai 100 pertama kali
+  | 'perfect_10'         // Meraih nilai 100 sebanyak 10 kali
+  | 'speed_demon'        // Menyelesaikan lembar kerja nilai 100 dalam waktu < 50% SCT
+  | 'level_master'       // Menguasai (Master) minimal 1 level
+  | 'multi_master'       // Menguasai 3 level
+  | 'journal_starter'    // Menulis catatan refleksi pertama
+  | 'journal_pro';       // Menulis 5 catatan refleksi
+
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+
+export interface BadgeDefinition {
+  id: BadgeId;
+  title: string;
+  category: 'worksheets' | 'streak' | 'accuracy' | 'speed' | 'mastery' | 'journal';
+  categoryLabel: string;
+  description: string;
+  icon: string;
+  tier: BadgeTier;
+  targetValue: number;
+  unit: string;
+}
+
+export interface UnlockedBadge {
+  badgeId: BadgeId;
+  unlockedAt: number; // timestamp
+  progressValue: number;
+  metadata?: string;
+}
+
+export type ReflectionFeeling = 'sangat_mudah' | 'pas_menyenangkan' | 'butuh_latihan_lagi' | 'cukup_sulit';
+
+export interface ReflectionJournalEntry {
+  id: string;
+  userId?: string;
+  studentUsername?: string;
+  studentName: string;
+  timestamp: number;
+  dateStr: string; // YYYY-MM-DD
+  levelId: KumonLevelId;
+  worksheetNum: number;
+  score: number;
+  timeSpentSeconds: number;
+  reflectionText: string; // Apa yang dipelajari hari ini / catatan pemahaman
+  feeling?: ReflectionFeeling;
+  keyTakeaway?: string;
 }
 
 export interface PretestQuestion {

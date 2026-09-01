@@ -4,9 +4,13 @@ import {
   LevelProgress, 
   WorksheetSessionResult, 
   PretestResult,
-  UserAccount 
+  UserAccount,
+  UnlockedBadge,
+  BadgeDefinition,
+  ReflectionJournalEntry
 } from '../types';
 import { KUMON_LEVEL_ORDER } from '../data/curriculumData';
+import { BADGE_DEFINITIONS, evaluateAllBadges } from '../data/badgesData';
 import { FirebaseSyncService } from '../services/firebaseSync';
 
 const STORAGE_KEYS = {
@@ -16,7 +20,9 @@ const STORAGE_KEYS = {
   PRETEST_RESULT: 'stepup_math_pretest_result',
   ADMIN_SETTINGS: 'stepup_math_admin_settings',
   ACCOUNTS_CACHE: 'stepup_math_registered_accounts',
-  THEME: 'stepup_math_theme'
+  THEME: 'stepup_math_theme',
+  BADGES: 'stepup_math_student_badges',
+  JOURNALS: 'stepup_math_reflection_journals'
 };
 
 export type AppTheme = 'light' | 'dark';
@@ -251,6 +257,7 @@ export function saveSessionResult(result: WorksheetSessionResult): {
   updatedProgress: Record<KumonLevelId, LevelProgress>;
   isNewLevelUnlocked: boolean;
   unlockedLevelId?: KumonLevelId;
+  newlyUnlockedBadges?: BadgeDefinition[];
 } {
   const history = getStoredSessionHistory();
   history.unshift(result); // latest first
@@ -351,10 +358,29 @@ export function saveSessionResult(result: WorksheetSessionResult): {
     console.warn('Background session cloud sync deferred:', err);
   });
 
+  // Evaluate and award badges automatically
+  const sessions = getStoredSessionHistory();
+  const currentBadges = getStoredBadges();
+  const journals = getStoredReflectionJournals();
+  const badgeEval = evaluateAllBadges(profile, sessions, progress, journals, currentBadges);
+
+  let newlyUnlockedBadges: BadgeDefinition[] = [];
+  if (badgeEval.newlyUnlocked.length > 0) {
+    saveStoredBadges(badgeEval.allUnlocked);
+    newlyUnlockedBadges = badgeEval.newlyUnlocked;
+    
+    // Update badges count in profile
+    if (profile) {
+      profile.badgesCount = badgeEval.allUnlocked.length;
+      saveStoredProfile(profile);
+    }
+  }
+
   return {
     updatedProgress: progress,
     isNewLevelUnlocked,
-    unlockedLevelId
+    unlockedLevelId,
+    newlyUnlockedBadges
   };
 }
 
@@ -440,6 +466,8 @@ export function resetAllDeviceData(): void {
   localStorage.removeItem(STORAGE_KEYS.LEVEL_PROGRESS);
   localStorage.removeItem(STORAGE_KEYS.SESSION_HISTORY);
   localStorage.removeItem(STORAGE_KEYS.PRETEST_RESULT);
+  localStorage.removeItem(STORAGE_KEYS.BADGES);
+  localStorage.removeItem(STORAGE_KEYS.JOURNALS);
 }
 
 export function exportDeviceBackupJSON(): string {
@@ -448,6 +476,8 @@ export function exportDeviceBackupJSON(): string {
     levelProgress: getStoredLevelProgress(),
     sessionHistory: getStoredSessionHistory(),
     pretestResult: getStoredPretestResult(),
+    badges: getStoredBadges(),
+    journals: getStoredReflectionJournals(),
     exportedAt: new Date().toISOString()
   };
   return JSON.stringify(data, null, 2);
@@ -460,10 +490,168 @@ export function importDeviceBackupJSON(jsonString: string): boolean {
     if (parsed.levelProgress) localStorage.setItem(STORAGE_KEYS.LEVEL_PROGRESS, JSON.stringify(parsed.levelProgress));
     if (parsed.sessionHistory) localStorage.setItem(STORAGE_KEYS.SESSION_HISTORY, JSON.stringify(parsed.sessionHistory));
     if (parsed.pretestResult) localStorage.setItem(STORAGE_KEYS.PRETEST_RESULT, JSON.stringify(parsed.pretestResult));
+    if (parsed.badges) localStorage.setItem(STORAGE_KEYS.BADGES, JSON.stringify(parsed.badges));
+    if (parsed.journals) localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(parsed.journals));
     return true;
   } catch (e) {
     console.error('Import failed', e);
     return false;
+  }
+}
+
+// ----------------- BADGES STORAGE & REWARDS -----------------
+
+export function getStoredBadges(): UnlockedBadge[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.BADGES);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error('Failed to load stored badges', e);
+    return [];
+  }
+}
+
+export function saveStoredBadges(badges: UnlockedBadge[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.BADGES, JSON.stringify(badges));
+  } catch (e) {
+    console.error('Failed to save badges', e);
+  }
+
+  // Cloud sync badges in background
+  const profile = getStoredProfile();
+  FirebaseSyncService.syncBadgesToCloud(badges, profile?.username || profile?.name).catch(err => {
+    console.warn('Background badges cloud sync deferred:', err);
+  });
+}
+
+export function unlockBadge(badgeId: string, progressValue: number = 1): UnlockedBadge[] {
+  const current = getStoredBadges();
+  const exists = current.some(b => b.badgeId === badgeId);
+  if (!exists) {
+    const newBadge: UnlockedBadge = {
+      badgeId: badgeId as any,
+      unlockedAt: Date.now(),
+      progressValue
+    };
+    const updated = [...current, newBadge];
+    saveStoredBadges(updated);
+    
+    // Update profile badges count
+    const profile = getStoredProfile();
+    if (profile) {
+      profile.badgesCount = updated.length;
+      saveStoredProfile(profile);
+    }
+    return updated;
+  }
+  return current;
+}
+
+export function checkAndTriggerBadgesEvaluation(): {
+  allUnlocked: UnlockedBadge[];
+  newlyUnlocked: BadgeDefinition[];
+} {
+  const profile = getStoredProfile();
+  const sessions = getStoredSessionHistory();
+  const progress = getStoredLevelProgress();
+  const journals = getStoredReflectionJournals();
+  const currentBadges = getStoredBadges();
+
+  const evalResult = evaluateAllBadges(profile, sessions, progress, journals, currentBadges);
+  if (evalResult.newlyUnlocked.length > 0) {
+    saveStoredBadges(evalResult.allUnlocked);
+    if (profile) {
+      profile.badgesCount = evalResult.allUnlocked.length;
+      saveStoredProfile(profile);
+    }
+  }
+  return evalResult;
+}
+
+// ----------------- REFLECTION JOURNALS STORAGE -----------------
+
+export function getStoredReflectionJournals(): ReflectionJournalEntry[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.JOURNALS);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error('Failed to load stored reflection journals', e);
+    return [];
+  }
+}
+
+export function saveStoredReflectionJournal(entry: ReflectionJournalEntry): {
+  journals: ReflectionJournalEntry[];
+  newlyUnlockedBadges: BadgeDefinition[];
+} {
+  try {
+    const current = getStoredReflectionJournals();
+    const existingIndex = current.findIndex(j => j.id === entry.id);
+    let updated: ReflectionJournalEntry[];
+
+    if (existingIndex >= 0) {
+      updated = [...current];
+      updated[existingIndex] = entry;
+    } else {
+      updated = [entry, ...current];
+    }
+
+    localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(updated));
+
+    // Update profile journal count
+    const profile = getStoredProfile();
+    if (profile) {
+      profile.journalCount = updated.length;
+      saveStoredProfile(profile);
+    }
+
+    // Sync to Database
+    FirebaseSyncService.syncReflectionJournalToCloud(entry).catch(err => {
+      console.warn('Background journal sync deferred:', err);
+    });
+
+    // Check for reflection badges (e.g., journal_starter, journal_pro)
+    const badgeCheck = checkAndTriggerBadgesEvaluation();
+
+    return {
+      journals: updated,
+      newlyUnlockedBadges: badgeCheck.newlyUnlocked
+    };
+  } catch (e) {
+    console.error('Failed to save reflection journal', e);
+    return {
+      journals: getStoredReflectionJournals(),
+      newlyUnlockedBadges: []
+    };
+  }
+}
+
+export function deleteStoredReflectionJournal(journalId: string): ReflectionJournalEntry[] {
+  try {
+    const current = getStoredReflectionJournals();
+    const updated = current.filter(j => j.id !== journalId);
+    localStorage.setItem(STORAGE_KEYS.JOURNALS, JSON.stringify(updated));
+
+    const profile = getStoredProfile();
+    if (profile) {
+      profile.journalCount = updated.length;
+      saveStoredProfile(profile);
+    }
+
+    // Also delete in Database
+    FirebaseSyncService.deleteReflectionJournalInCloud(journalId).catch(err => {
+      console.warn('Background journal delete deferred:', err);
+    });
+
+    return updated;
+  } catch (e) {
+    console.error('Failed to delete reflection journal', e);
+    return getStoredReflectionJournals();
   }
 }
 

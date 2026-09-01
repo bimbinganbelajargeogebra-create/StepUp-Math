@@ -353,7 +353,7 @@ export const PretestScreen: React.FC<PretestScreenProps> = ({
       {/* Professional Status Footer */}
       <footer className="py-2 sm:h-10 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex flex-col sm:flex-row items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide transition-colors duration-200 gap-1 sm:gap-0">
         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4">
-          <span className="uppercase text-indigo-200">Database: Firebase Firestore Aktif</span>
+          <span className="uppercase text-indigo-200">Database: Sinkronisasi Database Aktif</span>
           <span className="text-slate-500 hidden sm:inline">|</span>
           <span className="text-amber-300 font-bold">@copyright by. Pak GuruAi</span>
           <span className="text-slate-500 hidden md:inline">|</span>

@@ -28,14 +28,15 @@ import {
   FileText
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { KumonLevelId, Question, WorksheetSessionResult } from '../types';
+import { KumonLevelId, Question, WorksheetSessionResult, BadgeDefinition, ReflectionFeeling, ReflectionJournalEntry } from '../types';
 import { KUMON_LEVELS } from '../data/curriculumData';
 import { generateWorksheetQuestions } from '../utils/mathGenerators';
 import { KaTeXMath, MathText } from './KaTeXMath';
 import { Scratchpad } from './Scratchpad';
 import { VirtualMathPad } from './VirtualMathPad';
-import { saveSessionResult, AppTheme } from '../utils/storage';
+import { saveSessionResult, saveStoredReflectionJournal, getStoredProfile, AppTheme } from '../utils/storage';
 import { KumonWorksheetPrintModal, WorksheetPrintMode } from './KumonWorksheetPrintModal';
+import { BadgeUnlockModal } from './BadgeUnlockModal';
 
 interface WorksheetPracticeScreenProps {
   levelId: KumonLevelId;
@@ -88,6 +89,13 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
   const [unlockInfo, setUnlockInfo] = useState<{ isNewLevelUnlocked: boolean; unlockedLevelId?: KumonLevelId }>({
     isNewLevelUnlocked: false
   });
+  const [newlyUnlockedBadges, setNewlyUnlockedBadges] = useState<BadgeDefinition[]>([]);
+  
+  // Post-worksheet reflection state
+  const [reflectionText, setReflectionText] = useState('');
+  const [reflectionFeeling, setReflectionFeeling] = useState<ReflectionFeeling>('pas_menyenangkan');
+  const [isReflectionSaved, setIsReflectionSaved] = useState(false);
+  const [reflectionSaveStatus, setReflectionSaveStatus] = useState<string | null>(null);
 
   const levelInfo = (levelId && KUMON_LEVELS[levelId]) ? KUMON_LEVELS[levelId] : KUMON_LEVELS['6A'];
   const standardTimeSec = (levelInfo?.standardTimeMinutes || 5) * 60;
@@ -213,6 +221,9 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
     const unlock = saveSessionResult(result);
     setFinalResult(result);
     setUnlockInfo(unlock);
+    if (unlock.newlyUnlockedBadges && unlock.newlyUnlockedBadges.length > 0) {
+      setNewlyUnlockedBadges(unlock.newlyUnlockedBadges);
+    }
     setIsCompleted(true);
 
     if (score >= 80) {
@@ -225,6 +236,39 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
       } catch (e) {
         // Safe fallback
       }
+    }
+  };
+
+  const handleSaveReflection = () => {
+    if (!reflectionText.trim()) {
+      setReflectionSaveStatus('Tuliskan 1 kalimat hal yang kamu pahami hari ini.');
+      return;
+    }
+
+    const profile = getStoredProfile();
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+
+    const journalEntry: ReflectionJournalEntry = {
+      id: `journal-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      studentName: profile?.name || 'Siswa StepUp',
+      studentUsername: profile?.username,
+      timestamp: Date.now(),
+      dateStr,
+      levelId,
+      worksheetNum,
+      score: finalResult?.score || 100,
+      timeSpentSeconds: finalResult?.timeSpentSeconds || secondsElapsed,
+      reflectionText: reflectionText.trim(),
+      feeling: reflectionFeeling
+    };
+
+    const res = saveStoredReflectionJournal(journalEntry);
+    setIsReflectionSaved(true);
+    setReflectionSaveStatus('Catatan refleksi berhasil disimpan ke database!');
+    
+    if (res.newlyUnlockedBadges && res.newlyUnlockedBadges.length > 0) {
+      setNewlyUnlockedBadges((prev) => [...prev, ...(res.newlyUnlockedBadges || [])]);
     }
   };
 
@@ -330,6 +374,105 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                   ? 'Kecepatan dan akurasi Anda memenuhi standar target. Anda siap melanjutkan lembar kerja berikutnya!'
                   : 'Dalam sistem belajar mandiri bertahap, pengulangan lembar kerja bertujuan meraih nilai 100 dengan waktu pengerjaan optimal.'}
               </p>
+            </div>
+
+            {/* POST-WORKSHEET REFLECTION JOURNAL CARD */}
+            <div className="p-4 sm:p-5 bg-gradient-to-br from-indigo-50/80 via-white to-purple-50/60 dark:from-slate-800/80 dark:via-slate-800/50 dark:to-indigo-950/30 rounded-2xl border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                      Catatan Refleksi Belajar Hari Ini
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Tuliskan hal yang baru dipahami untuk disimpan di database &amp; raih lencana refleksi.
+                    </p>
+                  </div>
+                </div>
+
+                {isReflectionSaved && (
+                  <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold rounded-full border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Tersimpan
+                  </span>
+                )}
+              </div>
+
+              {/* Status Message */}
+              {reflectionSaveStatus && (
+                <div className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
+                  isReflectionSaved 
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                    : 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                }`}>
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                  <span>{reflectionSaveStatus}</span>
+                </div>
+              )}
+
+              {/* Feeling Selector */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  Bagaimana pemahamanmu di lembar kerja ini?
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: 'sangat_mudah', emoji: '⚡', label: 'Sangat Mudah' },
+                    { id: 'pas_menyenangkan', emoji: '😊', label: 'Pas & Menyenangkan' },
+                    { id: 'butuh_latihan_lagi', emoji: '🤔', label: 'Perlu Latihan' },
+                    { id: 'cukup_sulit', emoji: '🔥', label: 'Menantang' },
+                  ].map((f) => {
+                    const isSelected = reflectionFeeling === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setReflectionFeeling(f.id as ReflectionFeeling)}
+                        className={`p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-300'
+                        }`}
+                      >
+                        <span>{f.emoji}</span>
+                        <span className="text-[11px] truncate">{f.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Reflection Text Input */}
+              <div className="space-y-1">
+                <textarea
+                  rows={2}
+                  value={reflectionText}
+                  onChange={(e) => setReflectionText(e.target.value)}
+                  placeholder="Contoh: Saya sudah bisa menghitung perkalian bertingkat tanpa ragu dan lebih cepat..."
+                  className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Save Reflection Button */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  id="save-post-reflection-btn"
+                  onClick={handleSaveReflection}
+                  disabled={isReflectionSaved}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isReflectionSaved
+                      ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 cursor-not-allowed'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm active:scale-95'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{isReflectionSaved ? 'Refleksi Tersimpan ke Database' : 'Simpan Refleksi ke Database'}</span>
+                </button>
+              </div>
             </div>
 
             {/* DOWNLOAD OPTIONS & ACTION BUTTONS */}
@@ -505,6 +648,14 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
             initialWorksheetNum={worksheetNum}
             initialMode={printModalMode}
             onClose={() => setIsPrintModalOpen(false)}
+          />
+        )}
+
+        {/* Milestone Badge Unlock Celebratory Modal */}
+        {newlyUnlockedBadges.length > 0 && (
+          <BadgeUnlockModal
+            unlockedBadges={newlyUnlockedBadges}
+            onClose={() => setNewlyUnlockedBadges([])}
           />
         )}
       </div>
