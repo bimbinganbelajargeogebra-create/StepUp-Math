@@ -38,7 +38,8 @@ import {
   saveStoredLevelProgress, 
   saveStoredProfile,
   savePretestResult,
-  resetAllDeviceData 
+  resetAllDeviceData,
+  generateCleanLevelProgress 
 } from '../utils/storage';
 import { FirebaseDatabaseService, FirebaseSyncService } from '../services/firebaseSync';
 import { testFirebaseConnection } from '../lib/firebase';
@@ -82,6 +83,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
   const [accounts, setAccounts] = useState<UserAccount[]>([]);
   const [accountsFilter, setAccountsFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [accountsSearch, setAccountsSearch] = useState('');
+  const [approvalLevelChoices, setApprovalLevelChoices] = useState<Record<string, KumonLevelId>>({});
   const [rejectModalAccount, setRejectModalAccount] = useState<UserAccount | null>(null);
   const [rejectReasonInput, setRejectReasonInput] = useState('Data pendaftaran belum terverifikasi di bimbingan belajar.');
   const [actionSuccessNotice, setActionSuccessNotice] = useState<string | null>(null);
@@ -105,9 +107,27 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
     setProcessingUsername(username);
     setActionSuccessNotice(null);
     try {
-      const ok = await FirebaseDatabaseService.approveAccount(username, profile?.name || 'Admin Guru', startingLevel);
+      const chosenLevel = startingLevel || approvalLevelChoices[username] || '6A';
+      const ok = await FirebaseDatabaseService.approveAccount(username, profile?.name || 'Admin Guru', chosenLevel);
       if (ok) {
-        setActionSuccessNotice(`Akun @${username} berhasil DISETUJUI (Approved)! Siswa sekarang dapat login.`);
+        setActionSuccessNotice(`Akun @${username} berhasil DISETUJUI dengan Level Awal: ${chosenLevel}!`);
+        setTimeout(() => setActionSuccessNotice(null), 4000);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setProcessingUsername(null);
+    }
+  };
+
+  // Handle Changing Student Level
+  const handleUpdateStudentLevel = async (username: string, newLevel: KumonLevelId) => {
+    setProcessingUsername(username);
+    setActionSuccessNotice(null);
+    try {
+      const ok = await FirebaseDatabaseService.updateStudentLevel(username, newLevel, profile?.name || 'Admin Guru');
+      if (ok) {
+        setActionSuccessNotice(`Level siswa @${username} berhasil diubah ke Level ${newLevel}. Level terbuka telah dikalibrasi.`);
         setTimeout(() => setActionSuccessNotice(null), 4000);
       }
     } catch (e) {
@@ -247,6 +267,15 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
     });
     saveStoredLevelProgress(updated);
     onProgressUpdated(updated);
+  };
+
+  const handleLockToStudentLevel = () => {
+    const baseLevel = profile?.startingLevel || profile?.currentLevel || '6A';
+    const cleanProg = generateCleanLevelProgress(baseLevel, true);
+    saveStoredLevelProgress(cleanProg);
+    onProgressUpdated(cleanProg);
+    setActionSuccessNotice(`Level telah dikunci ulang sesuai level siswa saat ini (${baseLevel})`);
+    setTimeout(() => setActionSuccessNotice(null), 3500);
   };
 
   const handleToggleLevel = (lvlId: KumonLevelId) => {
@@ -563,9 +592,27 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                         </div>
 
                         {/* Action Buttons: APPROVE & REJECT */}
-                        <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                        <div className="flex flex-wrap items-center gap-1.5 self-end sm:self-center shrink-0">
                           {isPending && (
                             <>
+                              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 pl-1">Level:</span>
+                                <select
+                                  value={approvalLevelChoices[acc.username] || '6A'}
+                                  onChange={(e) => {
+                                    setApprovalLevelChoices(prev => ({
+                                      ...prev,
+                                      [acc.username]: e.target.value as KumonLevelId
+                                    }));
+                                  }}
+                                  className="text-xs font-bold bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 rounded-lg px-2 py-1 border border-slate-200 dark:border-slate-700 outline-none cursor-pointer"
+                                >
+                                  {KUMON_LEVEL_ORDER.map(lvl => (
+                                    <option key={lvl} value={lvl}>Level {lvl}</option>
+                                  ))}
+                                </select>
+                              </div>
+
                               <button
                                 id={`approve-btn-${acc.username}`}
                                 type="button"
@@ -574,7 +621,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                                 className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
                               >
                                 <UserCheck className="w-3.5 h-3.5" />
-                                <span>Setujui (Approve)</span>
+                                <span>Setujui</span>
                               </button>
 
                               <button
@@ -585,13 +632,27 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                                 className="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 dark:bg-rose-950 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 font-bold text-xs rounded-xl flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
                               >
                                 <UserX className="w-3.5 h-3.5" />
-                                <span>Tolak (Reject)</span>
+                                <span>Tolak</span>
                               </button>
                             </>
                           )}
 
                           {isApproved && (
                             <>
+                              <div className="flex items-center gap-1 bg-indigo-50/70 dark:bg-indigo-950/40 p-1 rounded-xl border border-indigo-200 dark:border-indigo-800" title="Ubah level siswa dan kalibrasi level terbuka">
+                                <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 pl-1">Level:</span>
+                                <select
+                                  disabled={isProcessing}
+                                  value={acc.currentLevel || acc.startingLevel || '6A'}
+                                  onChange={(e) => handleUpdateStudentLevel(acc.username, e.target.value as KumonLevelId)}
+                                  className="text-xs font-bold bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 rounded-lg px-2 py-1 border border-indigo-200 dark:border-indigo-800 outline-none cursor-pointer"
+                                >
+                                  {KUMON_LEVEL_ORDER.map(lvl => (
+                                    <option key={lvl} value={lvl}>Level {lvl}</option>
+                                  ))}
+                                </select>
+                              </div>
+
                               <button
                                 type="button"
                                 disabled={isProcessing}
@@ -608,7 +669,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                                 className="px-2.5 py-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
                                 title="Batalkan Persetujuan (Tolak)"
                               >
-                                Tolak Akun
+                                Tolak
                               </button>
                             </>
                           )}
@@ -674,19 +735,29 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                 </button>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h4 className="text-sm font-bold text-slate-800 dark:text-white">Manajemen Status 18 Level Kurikulum</h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Guru dapat membuka/mengunci level secara instan untuk kebutuhan pengajaran.</p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleUnlockAll}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
-                >
-                  Buka Semua (6A – M)
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleLockToStudentLevel}
+                    className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                    title="Kunci semua level di atas level siswa saat ini"
+                  >
+                    Kunci Sesuai Level Siswa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUnlockAll}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                  >
+                    Buka Semua (6A – M)
+                  </button>
+                </div>
               </div>
 
               {/* Grid of all 18 levels */}

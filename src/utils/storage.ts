@@ -115,22 +115,19 @@ export function saveStoredProfile(profile: StudentProfile): void {
   });
 }
 
-export function getStoredLevelProgress(): Record<KumonLevelId, LevelProgress> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.LEVEL_PROGRESS);
-    if (raw) {
-      return JSON.parse(raw);
-    }
-  } catch (e) {
-    console.error('Failed to load level progress', e);
-  }
+export function generateCleanLevelProgress(
+  targetLevel: KumonLevelId = '6A',
+  unlockPrevious: boolean = true
+): Record<KumonLevelId, LevelProgress> {
+  const progress: Partial<Record<KumonLevelId, LevelProgress>> = {};
+  const targetIdx = KUMON_LEVEL_ORDER.indexOf(targetLevel);
+  const safeTargetIdx = targetIdx !== -1 ? targetIdx : 0;
 
-  // Initialize fresh level progress
-  const initialProgress: Partial<Record<KumonLevelId, LevelProgress>> = {};
   KUMON_LEVEL_ORDER.forEach((lvl, idx) => {
-    initialProgress[lvl] = {
+    const isUnlocked = unlockPrevious ? idx <= safeTargetIdx : idx === safeTargetIdx;
+    progress[lvl] = {
       levelId: lvl,
-      unlocked: idx === 0, // 6A unlocked by default if not pretested
+      unlocked: isUnlocked,
       mastered: false,
       completedWorksheets: [],
       highestScores: {},
@@ -139,7 +136,92 @@ export function getStoredLevelProgress(): Record<KumonLevelId, LevelProgress> {
     };
   });
 
-  return initialProgress as Record<KumonLevelId, LevelProgress>;
+  return progress as Record<KumonLevelId, LevelProgress>;
+}
+
+export function sanitizeStudentLevelProgress(
+  rawProgress: Record<KumonLevelId, LevelProgress> | null | undefined,
+  profile: StudentProfile | null
+): Record<KumonLevelId, LevelProgress> {
+  if (profile?.isAdmin) {
+    return rawProgress || unlockAllLevelsAdmin();
+  }
+
+  const baseLevel: KumonLevelId = profile?.startingLevel || profile?.currentLevel || '6A';
+  const baseIdx = Math.max(0, KUMON_LEVEL_ORDER.indexOf(baseLevel));
+
+  if (profile?.isTrial) {
+    const trialProgress: Partial<Record<KumonLevelId, LevelProgress>> = {};
+    KUMON_LEVEL_ORDER.forEach((lvl) => {
+      const existing = rawProgress?.[lvl];
+      trialProgress[lvl] = {
+        levelId: lvl,
+        unlocked: lvl === baseLevel,
+        mastered: existing?.mastered || false,
+        masteryDate: existing?.masteryDate,
+        completedWorksheets: existing?.completedWorksheets || [],
+        highestScores: existing?.highestScores || {},
+        bestTimes: existing?.bestTimes || {},
+        attemptsCount: existing?.attemptsCount || {}
+      };
+    });
+    return trialProgress as Record<KumonLevelId, LevelProgress>;
+  }
+
+  const sanitized: Partial<Record<KumonLevelId, LevelProgress>> = {};
+  
+  // Track continuous mastery chain from baseLevel
+  let previousLevelMastered = false;
+
+  KUMON_LEVEL_ORDER.forEach((lvl, idx) => {
+    const existing = rawProgress?.[lvl];
+    const isMastered = Boolean(existing?.mastered);
+    
+    let isUnlocked = false;
+    if (idx <= baseIdx) {
+      // All levels up to starting/current assigned level are accessible
+      isUnlocked = true;
+    } else {
+      // Future levels are ONLY unlocked if the immediate previous level is mastered
+      isUnlocked = previousLevelMastered || isMastered;
+    }
+
+    sanitized[lvl] = {
+      levelId: lvl,
+      unlocked: isUnlocked,
+      mastered: isMastered,
+      masteryDate: existing?.masteryDate,
+      completedWorksheets: existing?.completedWorksheets || [],
+      highestScores: existing?.highestScores || {},
+      bestTimes: existing?.bestTimes || {},
+      attemptsCount: existing?.attemptsCount || {}
+    };
+
+    // Update mastery status for next level in loop
+    previousLevelMastered = isMastered;
+  });
+
+  return sanitized as Record<KumonLevelId, LevelProgress>;
+}
+
+export function getStoredLevelProgress(): Record<KumonLevelId, LevelProgress> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.LEVEL_PROGRESS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const profile = getStoredProfile();
+      if (profile && !profile.isAdmin) {
+        return sanitizeStudentLevelProgress(parsed, profile);
+      }
+      return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load level progress', e);
+  }
+
+  const profile = getStoredProfile();
+  const baseLevel: KumonLevelId = profile?.startingLevel || profile?.currentLevel || '6A';
+  return generateCleanLevelProgress(baseLevel, true);
 }
 
 export function saveStoredLevelProgress(progress: Record<KumonLevelId, LevelProgress>): void {
@@ -308,29 +390,38 @@ export function savePretestResult(result: PretestResult): void {
     saveStoredProfile(profile);
   }
 
-  // Unlock levels according to account mode
-  const progress = getStoredLevelProgress();
+  // Calibrate level progress to strictly unlock up to assigned starting level
+  const currentProgress = getStoredLevelProgress();
   const assignedIdx = KUMON_LEVEL_ORDER.indexOf(result.assignedLevel);
+  const safeAssignedIdx = assignedIdx !== -1 ? assignedIdx : 0;
   
+  const updatedProgress: Record<KumonLevelId, LevelProgress> = { ...currentProgress };
+
   if (profile?.isTrial) {
     // Trial Mode: ONLY unlock the placed level, lock all others
     KUMON_LEVEL_ORDER.forEach((lvl) => {
-      if (progress[lvl]) {
-        progress[lvl].unlocked = (lvl === result.assignedLevel);
+      const isTarget = lvl === result.assignedLevel;
+      if (updatedProgress[lvl]) {
+        updatedProgress[lvl] = {
+          ...updatedProgress[lvl],
+          unlocked: isTarget
+        };
       }
     });
   } else {
-    // Standard / Admin: Unlock all levels up to the assigned starting level
+    // Standard student: Unlock levels up to assigned level, lock all future levels
     KUMON_LEVEL_ORDER.forEach((lvl, idx) => {
-      if (idx <= Math.max(0, assignedIdx)) {
-        if (progress[lvl]) {
-          progress[lvl].unlocked = true;
-        }
+      const isUpToAssigned = idx <= safeAssignedIdx;
+      if (updatedProgress[lvl]) {
+        updatedProgress[lvl] = {
+          ...updatedProgress[lvl],
+          unlocked: isUpToAssigned
+        };
       }
     });
   }
 
-  saveStoredLevelProgress(progress);
+  saveStoredLevelProgress(updatedProgress);
 }
 
 export function logoutStudentSession(): void {
@@ -382,7 +473,19 @@ export function getStoredAccounts(): UserAccount[] {
     const raw = localStorage.getItem(STORAGE_KEYS.ACCOUNTS_CACHE);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is UserAccount => Boolean(
+        item && 
+        typeof item === 'object' && 
+        typeof ((item as any).username || (item as any).id) === 'string' && 
+        ((item as any).username || (item as any).id).trim().length > 0
+      ))
+      .map(item => ({
+        ...item,
+        role: item.role || 'student',
+        username: String((item as any).username || (item as any).id || '').trim().toLowerCase()
+      }));
   } catch (e) {
     console.error('Failed to load stored accounts cache', e);
     return [];
@@ -391,28 +494,58 @@ export function getStoredAccounts(): UserAccount[] {
 
 export function saveStoredAccounts(accounts: UserAccount[]): void {
   try {
-    localStorage.setItem(STORAGE_KEYS.ACCOUNTS_CACHE, JSON.stringify(accounts));
+    if (!Array.isArray(accounts)) return;
+    const cleanAccounts: UserAccount[] = accounts
+      .filter(a => Boolean(
+        a && 
+        typeof a === 'object' && 
+        typeof (a.username || (a as any).id) === 'string' && 
+        (a.username || (a as any).id).trim().length > 0
+      ))
+      .map(a => ({
+        ...a,
+        role: a.role || 'student',
+        username: String(a.username || (a as any).id || '').trim().toLowerCase()
+      }));
+    localStorage.setItem(STORAGE_KEYS.ACCOUNTS_CACHE, JSON.stringify(cleanAccounts));
   } catch (e) {
     console.error('Failed to save stored accounts cache', e);
   }
 }
 
-export function getStoredAccountByUsername(username: string): UserAccount | null {
-  if (!username) return null;
+export function getStoredAccountByUsername(username?: string | null): UserAccount | null {
+  if (!username || typeof username !== 'string' || !username.trim()) return null;
   const accounts = getStoredAccounts();
   const clean = username.trim().toLowerCase();
-  return accounts.find(a => a.username.toLowerCase() === clean) || null;
+  return accounts.find(a => a && typeof a.username === 'string' && a.username.trim().toLowerCase() === clean) || null;
 }
 
-export function upsertStoredAccount(account: UserAccount): void {
+export function upsertStoredAccount(account: Partial<UserAccount> & { id?: string; username?: string }): void {
   try {
+    if (!account || typeof account !== 'object') return;
+    const rawUsername = account.username || account.id;
+    if (!rawUsername || typeof rawUsername !== 'string' || !rawUsername.trim()) {
+      return;
+    }
+    const clean = rawUsername.trim().toLowerCase();
     const accounts = getStoredAccounts();
-    const clean = account.username.trim().toLowerCase();
-    const idx = accounts.findIndex(a => a.username.toLowerCase() === clean);
+    const validAccount: UserAccount = {
+      name: account.name || clean,
+      grade: account.grade || 'SD Kelas 3',
+      school: account.school || '',
+      avatar: account.avatar || '🦊',
+      status: account.status || 'pending',
+      role: account.role || 'student',
+      createdAt: account.createdAt || Date.now(),
+      ...account,
+      username: clean,
+    };
+
+    const idx = accounts.findIndex(a => a && typeof a.username === 'string' && a.username.trim().toLowerCase() === clean);
     if (idx >= 0) {
-      accounts[idx] = { ...accounts[idx], ...account };
+      accounts[idx] = { ...accounts[idx], ...validAccount };
     } else {
-      accounts.unshift(account);
+      accounts.unshift(validAccount);
     }
     saveStoredAccounts(accounts);
   } catch (e) {

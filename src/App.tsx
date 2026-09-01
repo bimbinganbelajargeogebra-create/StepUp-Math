@@ -15,6 +15,7 @@ import {
   logoutStudentSession,
   getStoredTheme,
   saveStoredTheme,
+  sanitizeStudentLevelProgress,
   AppTheme
 } from './utils/storage';
 import { FirebaseDatabaseService } from './services/firebaseSync';
@@ -80,13 +81,15 @@ export default function App() {
     // 1. Initial async load from Firebase Firestore
     FirebaseDatabaseService.loadAllUserData().then((cloudData) => {
       if (cloudData) {
+        const currentProfile = cloudData.profile || getStoredProfile();
         if (cloudData.profile) {
           setProfile(cloudData.profile);
           saveStoredProfile(cloudData.profile);
         }
         if (cloudData.levelProgress) {
-          setLevelProgress(cloudData.levelProgress);
-          saveStoredLevelProgress(cloudData.levelProgress);
+          const cleanProg = sanitizeStudentLevelProgress(cloudData.levelProgress, currentProfile);
+          setLevelProgress(cleanProg);
+          saveStoredLevelProgress(cleanProg);
         }
         if (cloudData.sessionHistory && cloudData.sessionHistory.length > 0) {
           setSessionHistory(cloudData.sessionHistory);
@@ -103,13 +106,16 @@ export default function App() {
 
     // 2. Subscribe to real-time User Doc updates in Firestore
     const unsubscribeUser = FirebaseDatabaseService.subscribeToUserData((update) => {
+      let currentProf = profile;
       if (update.profile) {
-        setProfile(prev => ({ ...(prev || {}), ...update.profile }));
+        currentProf = { ...(profile || {}), ...update.profile } as StudentProfile;
+        setProfile(currentProf);
         saveStoredProfile(update.profile);
       }
       if (update.levelProgress) {
-        setLevelProgress(update.levelProgress);
-        saveStoredLevelProgress(update.levelProgress);
+        const cleanProg = sanitizeStudentLevelProgress(update.levelProgress, currentProf);
+        setLevelProgress(cleanProg);
+        saveStoredLevelProgress(cleanProg);
       }
       if (update.pretestResult) {
         setPretestResult(update.pretestResult);

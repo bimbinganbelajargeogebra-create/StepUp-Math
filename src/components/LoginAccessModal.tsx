@@ -37,6 +37,8 @@ import {
   saveStoredProfile, 
   getStoredProfile,
   saveStoredLevelProgress,
+  sanitizeStudentLevelProgress,
+  generateCleanLevelProgress,
   AppTheme
 } from '../utils/storage';
 import { FirebaseDatabaseService } from '../services/firebaseSync';
@@ -268,7 +270,12 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         };
 
         if (acc.levelProgress) {
-          saveStoredLevelProgress(acc.levelProgress);
+          const sanitized = sanitizeStudentLevelProgress(acc.levelProgress, approvedProfile);
+          saveStoredLevelProgress(sanitized);
+        } else {
+          const targetLevel = approvedProfile.startingLevel || approvedProfile.currentLevel || '6A';
+          const freshProgress = generateCleanLevelProgress(targetLevel, true);
+          saveStoredLevelProgress(freshProgress);
         }
 
         saveStoredProfile(approvedProfile);
@@ -295,6 +302,10 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
           streakDays: existing?.streakDays || 1,
           lastStudyDate: new Date().toISOString().split('T')[0]
         };
+
+        const targetLevel = studentProfile.startingLevel || studentProfile.currentLevel || '6A';
+        const freshProgress = generateCleanLevelProgress(targetLevel, true);
+        saveStoredLevelProgress(freshProgress);
 
         saveStoredProfile(studentProfile);
         onSuccess(studentProfile);

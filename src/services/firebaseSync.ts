@@ -26,7 +26,8 @@ import {
   getStoredAccounts, 
   saveStoredAccounts, 
   getStoredAccountByUsername, 
-  upsertStoredAccount 
+  upsertStoredAccount,
+  generateCleanLevelProgress 
 } from '../utils/storage';
 
 export interface FirebaseUserData {
@@ -177,8 +178,14 @@ export class FirebaseDatabaseService {
         const accountRef = doc(db, 'accounts', cleanUsername);
         const accountDoc = await getDoc(accountRef);
         if (accountDoc.exists()) {
-          account = accountDoc.data() as UserAccount;
-          upsertStoredAccount(account);
+          const docData = accountDoc.data();
+          if (docData) {
+            account = {
+              username: cleanUsername,
+              ...docData,
+            } as UserAccount;
+            upsertStoredAccount(account);
+          }
         }
       } catch (cloudErr) {
         console.warn('Firestore login fetch notice (using local cache if present):', cloudErr);
@@ -247,8 +254,14 @@ export class FirebaseDatabaseService {
         const accountRef = doc(db, 'accounts', cleanUsername);
         const accountDoc = await getDoc(accountRef);
         if (accountDoc.exists()) {
-          account = accountDoc.data() as UserAccount;
-          upsertStoredAccount(account);
+          const docData = accountDoc.data();
+          if (docData) {
+            account = {
+              username: cleanUsername,
+              ...docData,
+            } as UserAccount;
+            upsertStoredAccount(account);
+          }
         }
       } catch (err) {
         console.warn('Firestore checkAccountStatus notice (falling back to local):', err);
@@ -289,12 +302,32 @@ export class FirebaseDatabaseService {
         const q = query(accountsRef, orderBy('createdAt', 'desc'));
 
         unsubscribeAccounts = onSnapshot(q, (snapshot) => {
-          const remoteAccounts: UserAccount[] = snapshot.docs.map(docSnap => docSnap.data() as UserAccount);
+          const remoteAccounts: UserAccount[] = snapshot.docs
+            .map(docSnap => {
+              const data = docSnap.data();
+              if (!data) return null;
+              const rawUsername = data.username || docSnap.id || '';
+              const username = String(rawUsername).trim().toLowerCase();
+              if (!username) return null;
+              return {
+                ...data,
+                username,
+              } as UserAccount;
+            })
+            .filter((item): item is UserAccount => item !== null);
           
           // Merge remote with local
           const localMap = new Map<string, UserAccount>();
-          getStoredAccounts().forEach(acc => localMap.set(acc.username.toLowerCase(), acc));
-          remoteAccounts.forEach(acc => localMap.set(acc.username.toLowerCase(), acc));
+          getStoredAccounts().forEach(acc => {
+            if (acc && typeof acc.username === 'string' && acc.username.trim()) {
+              localMap.set(acc.username.trim().toLowerCase(), acc);
+            }
+          });
+          remoteAccounts.forEach(acc => {
+            if (acc && typeof acc.username === 'string' && acc.username.trim()) {
+              localMap.set(acc.username.trim().toLowerCase(), acc);
+            }
+          });
           
           const merged = Array.from(localMap.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
           saveStoredAccounts(merged);
@@ -315,7 +348,7 @@ export class FirebaseDatabaseService {
   }
 
   /**
-   * Approve student account
+   * Approve student account with calibrated level progress
    */
   static async approveAccount(
     username: string, 
@@ -324,6 +357,9 @@ export class FirebaseDatabaseService {
   ): Promise<boolean> {
     const cleanUsername = username.toLowerCase();
     try {
+      const assignedLevel = startingLevel || '6A';
+      const cleanProgress = generateCleanLevelProgress(assignedLevel, true);
+
       // 1. Update local storage cache immediately
       const existing = getStoredAccountByUsername(cleanUsername);
       if (existing) {
@@ -333,7 +369,9 @@ export class FirebaseDatabaseService {
           approvedAt: Date.now(),
           reviewedBy: adminName,
           updatedAt: Date.now(),
-          ...(startingLevel ? { startingLevel, currentLevel: startingLevel } : {})
+          startingLevel: assignedLevel,
+          currentLevel: assignedLevel,
+          levelProgress: cleanProgress
         });
       }
 
@@ -345,13 +383,59 @@ export class FirebaseDatabaseService {
           approvedAt: Date.now(),
           reviewedBy: adminName,
           updatedAt: Date.now(),
-          ...(startingLevel ? { startingLevel, currentLevel: startingLevel } : {})
+          startingLevel: assignedLevel,
+          currentLevel: assignedLevel,
+          levelProgress: cleanProgress
         }, { merge: true }).catch(err => console.warn('Firestore approveAccount write notice:', err));
       }).catch(err => console.warn('Auth notice:', err));
 
       return true;
     } catch (error) {
       console.error('Firebase approveAccount error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Update student assigned level (Guru / Admin) and calibrate level progress
+   */
+  static async updateStudentLevel(
+    username: string,
+    newLevel: KumonLevelId,
+    adminName: string = 'Admin'
+  ): Promise<boolean> {
+    const cleanUsername = username.toLowerCase();
+    try {
+      const cleanProgress = generateCleanLevelProgress(newLevel, true);
+
+      // 1. Update local storage cache
+      const existing = getStoredAccountByUsername(cleanUsername);
+      if (existing) {
+        upsertStoredAccount({
+          ...existing,
+          startingLevel: newLevel,
+          currentLevel: newLevel,
+          levelProgress: cleanProgress,
+          updatedAt: Date.now(),
+          reviewedBy: adminName
+        });
+      }
+
+      // 2. Sync to Firestore
+      ensureFirebaseAuth().then(() => {
+        const accountRef = doc(db, 'accounts', cleanUsername);
+        setDoc(accountRef, {
+          startingLevel: newLevel,
+          currentLevel: newLevel,
+          levelProgress: cleanProgress,
+          updatedAt: Date.now(),
+          reviewedBy: adminName
+        }, { merge: true }).catch(err => console.warn('Firestore updateStudentLevel write notice:', err));
+      }).catch(err => console.warn('Auth notice:', err));
+
+      return true;
+    } catch (error) {
+      console.error('Firebase updateStudentLevel error:', error);
       return false;
     }
   }
