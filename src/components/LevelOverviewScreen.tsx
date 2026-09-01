@@ -494,9 +494,9 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
       {/* Professional Status Footer */}
       <footer className="py-2.5 sm:h-12 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex flex-col sm:flex-row items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide mt-auto transition-colors duration-200 gap-2 sm:gap-0">
         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4">
-          <span className="flex items-center gap-1.5 uppercase">
-            <HardDrive className="w-3.5 h-3.5 text-slate-400" />
-            <span>Penyimpanan Lokal: Aktif</span>
+          <span className="flex items-center gap-1.5 uppercase text-indigo-200">
+            <Database className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Database: Firebase Firestore Aktif</span>
           </span>
           <span className="text-slate-500 hidden sm:inline">|</span>
           <span className="text-amber-300 font-bold">
@@ -509,7 +509,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-          <span className="text-slate-300 uppercase tracking-wider text-[10px]">SISTEM SIAP</span>
+          <span className="text-slate-300 uppercase tracking-wider text-[10px]">FIREBASE ONLINE</span>
         </div>
       </footer>
 

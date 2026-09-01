@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StepUpMathDatabaseSchema",
+  "description": "Firebase Firestore Database Schema for StepUp Math Multi-Level Learning Platform",
+  "entities": {
+    "users": {
+      "title": "User",
+      "description": "Student or Teacher/Admin user profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user/student identifier" },
+        "name": { "type": "string", "description": "Student full name" },
+        "grade": { "type": "string", "description": "Student school grade" },
+        "school": { "type": "string", "description": "School name" },
+        "avatar": { "type": "string", "description": "Avatar icon name or URL" },
+        "currentLevel": { "type": "string", "description": "Current learning level ID" },
+        "startingLevel": { "type": "string", "description": "Placement starting level ID" },
+        "pretestCompleted": { "type": "boolean", "description": "Whether pretest is completed" },
+        "totalWorksheetsCompleted": { "type": "number", "description": "Total count of finished worksheets" },
+        "totalPoints": { "type": "number", "description": "Total gamified points" },
+        "streakDays": { "type": "number", "description": "Consecutive active days" },
+        "lastStudyDate": { "type": "string", "description": "Last practice date YYYY-MM-DD" },
+        "isAdmin": { "type": "boolean", "description": "Admin privileges flag" },
+        "isTrial": { "type": "boolean", "description": "Trial student flag" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name"]
+    },
+    "levelProgress": {
+      "title": "Level Progress",
+      "description": "Progress tracking for each Kumon level per user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique progress record ID (userId_levelId)" },
+        "userId": { "type": "string", "description": "Owner student ID" },
+        "levelId": { "type": "string", "description": "Kumon level ID (e.g. 6A, A, B, M)" },
+        "unlocked": { "type": "boolean", "description": "Whether this level is unlocked" },
+        "mastered": { "type": "boolean", "description": "Whether this level has been mastered" },
+        "completedWorksheets": { "type": "array", "items": { "type": "number" }, "description": "List of completed worksheet numbers" },
+        "highestScores": { "type": "object", "description": "Map of worksheet number to highest score" },
+        "bestTimes": { "type": "object", "description": "Map of worksheet number to best time in seconds" },
+        "attemptsCount": { "type": "object", "description": "Map of worksheet number to total attempts" },
+        "masteryDate": { "type": "number", "description": "Timestamp when mastered" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "levelId", "unlocked", "mastered"]
+    },
+    "sessionHistory": {
+      "title": "Worksheet Session History",
+      "description": "Historical log of completed drill sessions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique session ID" },
+        "userId": { "type": "string", "description": "Student user ID" },
+        "studentName": { "type": "string", "description": "Student name at session time" },
+        "levelId": { "type": "string", "description": "Level ID" },
+        "worksheetNum": { "type": "number", "description": "Worksheet number 1-10" },
+        "timestamp": { "type": "number", "description": "Completion timestamp" },
+        "totalQuestions": { "type": "number", "description": "Total questions count" },
+        "correctCount": { "type": "number", "description": "Correct answers count" },
+        "score": { "type": "number", "description": "Score 0-100" },
+        "timeSpentSeconds": { "type": "number", "description": "Duration in seconds" },
+        "standardTimeSeconds": { "type": "number", "description": "SCT standard target in seconds" },
+        "isMastered": { "type": "boolean", "description": "Whether session achieved mastery" },
+        "answers": { "type": "array", "description": "List of question responses" }
+      },
+      "required": ["id", "userId", "levelId", "worksheetNum", "timestamp", "score"]
+    },
+    "pretestResults": {
+      "title": "Pretest Diagnostic Result",
+      "description": "Diagnostic pretest placement assessment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique pretest ID (userId)" },
+        "userId": { "type": "string", "description": "Student user ID" },
+        "studentName": { "type": "string", "description": "Student name" },
+        "completedAt": { "type": "number", "description": "Timestamp" },
+        "assignedLevel": { "type": "string", "description": "Calculated starting level ID" },
+        "score": { "type": "number", "description": "Diagnostic score" },
+        "total": { "type": "number", "description": "Total questions" },
+        "breakdown": { "type": "object", "description": "Per-level performance breakdown" }
+      },
+      "required": ["id", "userId", "assignedLevel", "completedAt"]
+    }
+  }
+}

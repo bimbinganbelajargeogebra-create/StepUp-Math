@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { KumonLevelId, StudentProfile, LevelProgress, WorksheetSessionResult, PretestResult } from './types';
 import { 
   getStoredProfile, 
@@ -17,6 +17,7 @@ import {
   saveStoredTheme,
   AppTheme
 } from './utils/storage';
+import { FirebaseDatabaseService } from './services/firebaseSync';
 import { NetworkStatusBanner } from './components/NetworkStatusBanner';
 import { LoginAccessModal } from './components/LoginAccessModal';
 import { HomeLandingScreen } from './components/HomeLandingScreen';
@@ -35,6 +36,7 @@ export default function App() {
   const [sessionHistory, setSessionHistory] = useState<WorksheetSessionResult[]>([]);
   const [pretestResult, setPretestResult] = useState<PretestResult | null>(null);
   const [theme, setTheme] = useState<AppTheme>('light');
+  const [isCloudReady, setIsCloudReady] = useState(false);
 
   // Navigation / View State
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
@@ -54,7 +56,7 @@ export default function App() {
   }>({ isOpen: false });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Sync state from LocalStorage on device
+  // Synchronize initial cache data
   const syncStorageData = useCallback(() => {
     const p = getStoredProfile();
     const prog = getStoredLevelProgress();
@@ -62,18 +64,69 @@ export default function App() {
     const pt = getStoredPretestResult();
     const t = getStoredTheme();
 
-    setProfile(p);
-    setLevelProgress(prog);
-    setSessionHistory(hist);
-    setPretestResult(pt);
+    if (p) setProfile(p);
+    if (prog) setLevelProgress(prog);
+    if (hist) setSessionHistory(hist);
+    if (pt) setPretestResult(pt);
     setTheme(t);
   }, []);
 
-  // Initialize from Local Storage on device
+  // Initialize and attach real-time Firebase Firestore database listeners
   useEffect(() => {
     syncStorageData();
     const initialTheme = getStoredTheme();
     saveStoredTheme(initialTheme);
+
+    // 1. Initial async load from Firebase Firestore
+    FirebaseDatabaseService.loadAllUserData().then((cloudData) => {
+      if (cloudData) {
+        if (cloudData.profile) {
+          setProfile(cloudData.profile);
+          saveStoredProfile(cloudData.profile);
+        }
+        if (cloudData.levelProgress) {
+          setLevelProgress(cloudData.levelProgress);
+          saveStoredLevelProgress(cloudData.levelProgress);
+        }
+        if (cloudData.sessionHistory && cloudData.sessionHistory.length > 0) {
+          setSessionHistory(cloudData.sessionHistory);
+        }
+        if (cloudData.pretestResult) {
+          setPretestResult(cloudData.pretestResult);
+        }
+      }
+      setIsCloudReady(true);
+    }).catch((err) => {
+      console.warn('Firebase initial load fallback:', err);
+      setIsCloudReady(true);
+    });
+
+    // 2. Subscribe to real-time User Doc updates in Firestore
+    const unsubscribeUser = FirebaseDatabaseService.subscribeToUserData((update) => {
+      if (update.profile) {
+        setProfile(prev => ({ ...(prev || {}), ...update.profile }));
+        saveStoredProfile(update.profile);
+      }
+      if (update.levelProgress) {
+        setLevelProgress(update.levelProgress);
+        saveStoredLevelProgress(update.levelProgress);
+      }
+      if (update.pretestResult) {
+        setPretestResult(update.pretestResult);
+      }
+    });
+
+    // 3. Subscribe to real-time Session History in Firestore
+    const unsubscribeSessions = FirebaseDatabaseService.subscribeToSessions((sessions) => {
+      if (sessions && sessions.length > 0) {
+        setSessionHistory(sessions);
+      }
+    });
+
+    return () => {
+      if (unsubscribeUser) unsubscribeUser();
+      if (unsubscribeSessions) unsubscribeSessions();
+    };
   }, [syncStorageData]);
 
   const handleToggleTheme = () => {

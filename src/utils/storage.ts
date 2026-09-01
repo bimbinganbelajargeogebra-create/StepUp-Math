@@ -6,6 +6,7 @@ import {
   PretestResult 
 } from '../types';
 import { KUMON_LEVEL_ORDER } from '../data/curriculumData';
+import { FirebaseSyncService } from '../services/firebaseSync';
 
 const STORAGE_KEYS = {
   PROFILE: 'stepup_math_student_profile',
@@ -106,6 +107,10 @@ export function saveStoredProfile(profile: StudentProfile): void {
   } catch (e) {
     console.error('Failed to save profile', e);
   }
+  // Cloud sync in background
+  FirebaseSyncService.syncProfileToCloud(profile).catch((err) => {
+    console.warn('Background profile cloud sync deferred:', err);
+  });
 }
 
 export function getStoredLevelProgress(): Record<KumonLevelId, LevelProgress> {
@@ -141,6 +146,10 @@ export function saveStoredLevelProgress(progress: Record<KumonLevelId, LevelProg
   } catch (e) {
     console.error('Failed to save level progress', e);
   }
+  // Cloud sync in background
+  FirebaseSyncService.syncLevelProgressToCloud(progress).catch((err) => {
+    console.warn('Background level progress cloud sync deferred:', err);
+  });
 }
 
 export function getStoredSessionHistory(): WorksheetSessionResult[] {
@@ -253,6 +262,11 @@ export function saveSessionResult(result: WorksheetSessionResult): {
     saveStoredProfile(profile);
   }
 
+  // Cloud sync session result in background
+  FirebaseSyncService.syncSessionResultToCloud(result, profile?.name).catch((err) => {
+    console.warn('Background session cloud sync deferred:', err);
+  });
+
   return {
     updatedProgress: progress,
     isNewLevelUnlocked,
@@ -277,6 +291,11 @@ export function savePretestResult(result: PretestResult): void {
   } catch (e) {
     console.error('Failed to save pretest result', e);
   }
+
+  // Cloud sync pretest result in background
+  FirebaseSyncService.syncPretestResultToCloud(result).catch((err) => {
+    console.warn('Background pretest cloud sync deferred:', err);
+  });
 
   // Update profile with assigned level
   const profile = getStoredProfile();

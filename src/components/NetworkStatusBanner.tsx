@@ -101,17 +101,17 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({ onSync
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                 <span className="font-bold tracking-tight">Perangkat Sedang Offline</span>
                 <span className="text-amber-100 text-[11px] sm:text-xs">
-                  • Mode mandiri aktif. Lembar kerja, streak, dan progres pengerjaan tetap aman tersimpan di localStorage.
+                  • Mode mandiri aktif. Lembar kerja, streak, dan progres tersimpan di cache lokal dan akan otomatis diunggah ke Firebase saat tersambung.
                 </span>
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                 <span className="font-bold tracking-tight flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                  Koneksi Kembali Online
+                  Firebase Firestore Cloud Terhubung
                 </span>
                 <span className="text-emerald-100 text-[11px] sm:text-xs">
-                  • Seluruh data belajar telah sinkron dengan penyimpanan lokal (Pukul {lastSyncedTime}).
+                  • Seluruh data belajar telah sinkron real-time dengan basis data Firebase Firestore (Pukul {lastSyncedTime}).
                 </span>
               </div>
             )}
@@ -122,7 +122,7 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({ onSync
         <div className="flex items-center gap-2 shrink-0">
           <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/20 text-[11px] font-medium border border-white/20">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
-            <span>Penyimpanan Lokal Aktif</span>
+            <span>Firebase Firestore Aktif</span>
           </div>
 
           <button
@@ -131,7 +131,7 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({ onSync
             onClick={handleManualSync}
             disabled={isSyncing}
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white text-slate-900 hover:bg-slate-100 active:scale-95 text-xs font-bold transition-all shadow-2xs cursor-pointer disabled:opacity-75"
-            title="Muat ulang dan sinkronkan data dari localStorage"
+            title="Sinkronkan data dengan Firebase Firestore"
           >
             <RefreshCw className={`w-3 h-3 text-indigo-600 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan'}</span>

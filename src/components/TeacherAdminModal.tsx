@@ -26,8 +26,11 @@ import {
   importDeviceBackupJSON, 
   saveStoredLevelProgress, 
   saveStoredProfile,
+  savePretestResult,
   resetAllDeviceData 
 } from '../utils/storage';
+import { FirebaseSyncService } from '../services/firebaseSync';
+import { Cloud, CloudUpload, CloudDownload } from 'lucide-react';
 
 interface TeacherAdminModalProps {
   profile: StudentProfile | null;
@@ -52,6 +55,54 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
   const [importText, setImportText] = useState('');
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<string | null>(null);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+
+  const handleCloudUploadAll = async () => {
+    setIsCloudSyncing(true);
+    setCloudSyncStatus('Mengunggah data profil dan progres ke Firebase Firestore...');
+    try {
+      if (profile) {
+        await FirebaseSyncService.syncProfileToCloud(profile);
+      }
+      await FirebaseSyncService.syncLevelProgressToCloud(levelProgress);
+      setCloudSyncStatus('✓ Data profil dan level berhasil disinkronkan ke Firebase Cloud!');
+    } catch (err) {
+      console.error(err);
+      setCloudSyncStatus('Gagal menyinkronkan data ke cloud. Periksa koneksi internet.');
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  const handleCloudDownloadAll = async () => {
+    setIsCloudSyncing(true);
+    setCloudSyncStatus('Memeriksa dan memuat data dari Firebase Firestore...');
+    try {
+      const cloudData = await FirebaseSyncService.loadAllUserDataFromCloud();
+      if (cloudData) {
+        if (cloudData.profile) {
+          saveStoredProfile(cloudData.profile);
+          onProfileUpdated(cloudData.profile);
+        }
+        if (cloudData.levelProgress) {
+          saveStoredLevelProgress(cloudData.levelProgress);
+          onProgressUpdated(cloudData.levelProgress);
+        }
+        if (cloudData.pretestResult) {
+          savePretestResult(cloudData.pretestResult);
+        }
+        setCloudSyncStatus('✓ Berhasil memulihkan data siswa dari Firebase Firestore!');
+      } else {
+        setCloudSyncStatus('Belum ada data cadangan di Firebase Firestore untuk akun ini.');
+      }
+    } catch (err) {
+      console.error(err);
+      setCloudSyncStatus('Gagal memuat data dari Firebase. Pastikan koneksi aktif.');
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
 
   const handleUnlockAll = () => {
     const updated = { ...levelProgress };
@@ -298,10 +349,60 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
 
           {activeTab === 'backup' && (
             <div className="space-y-4">
+              {/* Firebase Cloud Firestore Card */}
+              <div className="p-4 bg-linear-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                      <Cloud className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-indigo-950">Firebase Cloud Backend (Firestore)</h4>
+                      <p className="text-[11px] text-indigo-700">Sinkronisasi & pencadangan awan otomatis aktif</p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-300">
+                    Online & Terhubung
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-600">
+                  Data latihan, progres level, dan hasil pretest otomatis disinkronkan ke Firebase Firestore di latar belakang saat online. Anda juga dapat memicu sinkronisasi atau pemulihan secara manual.
+                </p>
+
+                {cloudSyncStatus && (
+                  <div className="p-2.5 bg-white border border-indigo-200 rounded-xl text-xs font-semibold text-indigo-900 shadow-2xs">
+                    {cloudSyncStatus}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleCloudUploadAll}
+                    disabled={isCloudSyncing}
+                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <CloudUpload className="w-3.5 h-3.5" />
+                    <span>{isCloudSyncing ? 'Menyinkronkan...' : 'Unggah / Sinkronkan ke Cloud'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCloudDownloadAll}
+                    disabled={isCloudSyncing}
+                    className="px-3.5 py-2 bg-white hover:bg-slate-50 active:scale-95 text-slate-800 border border-slate-300 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <CloudDownload className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Pulihkan dari Cloud</span>
+                  </button>
+                </div>
+              </div>
+
               <div>
-                <h4 className="text-sm font-bold text-slate-800">Ekspor & Impor Data Perangkat</h4>
+                <h4 className="text-sm font-bold text-slate-800">Ekspor & Impor File Lokal</h4>
                 <p className="text-xs text-slate-500">
-                  Semua progres tersimpan secara lokal di browser/perangkat ini. Anda dapat mengunduh berkas JSON cadangan untuk disimpan atau dipindahkan ke perangkat lain.
+                  Anda juga dapat mengunduh berkas JSON cadangan mandiri untuk disimpan secara manual atau dipindahkan ke perangkat lain.
                 </p>
               </div>
 

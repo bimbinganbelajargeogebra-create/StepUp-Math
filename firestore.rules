@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // User profile access
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.auth.uid == userId || resource == null);
+      
+      // Subcollections for user data
+      match /levelProgress/{levelId} {
+        allow read: if true;
+        allow write: if isAuthenticated() && (request.auth.uid == userId || resource == null);
+      }
+      
+      match /sessions/{sessionId} {
+        allow read: if true;
+        allow write: if isAuthenticated() && (request.auth.uid == userId || resource == null);
+      }
+      
+      match /pretest/{pretestId} {
+        allow read: if true;
+        allow write: if isAuthenticated() && (request.auth.uid == userId || resource == null);
+      }
+    }
+    
+    // Root level collections for cross-device sync & leaderboard
+    match /levelProgress/{progressId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    match /sessionHistory/{sessionId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    match /pretestResults/{resultId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // Default fallback
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
