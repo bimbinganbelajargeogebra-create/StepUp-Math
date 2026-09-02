@@ -36,6 +36,9 @@ import {
   unlockAllLevelsAdmin, 
   saveStoredProfile, 
   getStoredProfile,
+  getStoredLevelProgress,
+  getStoredPretestResult,
+  upsertStoredAccount,
   saveStoredLevelProgress,
   sanitizeStudentLevelProgress,
   generateCleanLevelProgress,
@@ -248,8 +251,31 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
 
       if (result.success && result.account) {
         const acc = result.account;
-        const isPretestDone = Boolean(acc.pretestCompleted);
+        const existing = getStoredProfile();
+        const existingPretest = getStoredPretestResult();
+        const isSameStudent = existing?.username?.toLowerCase() === acc.username.toLowerCase();
         
+        const isPretestDone = Boolean(
+          acc.pretestCompleted ||
+          acc.pretestResult ||
+          (acc.startingLevel && acc.startingLevel !== null) ||
+          (isSameStudent && existing?.pretestCompleted) ||
+          (existingPretest && isSameStudent)
+        );
+
+        const assignedStartingLevel = isPretestDone
+          ? (acc.startingLevel || (isSameStudent ? existing?.startingLevel : null) || existingPretest?.assignedLevel || '6A')
+          : null;
+
+        const currentLvl = isPretestDone
+          ? (acc.currentLevel || (isSameStudent ? existing?.currentLevel : null) || assignedStartingLevel || '6A')
+          : '6A';
+
+        const lastStudiedLvl = acc.lastStudiedLevel || (isSameStudent ? existing?.lastStudiedLevel : undefined) || (isPretestDone ? assignedStartingLevel : undefined);
+        const lastStudiedWs = acc.lastStudiedWorksheet || (isSameStudent ? existing?.lastStudiedWorksheet : undefined) || 1;
+        const lastStudiedScr = acc.lastStudiedScore || (isSameStudent ? existing?.lastStudiedScore : undefined);
+        const lastStudiedTimestamp = acc.lastStudiedAt || (isSameStudent ? existing?.lastStudiedAt : undefined);
+
         const approvedProfile: StudentProfile = {
           username: acc.username,
           name: acc.name,
@@ -261,28 +287,54 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
           isAdmin: acc.role === 'admin',
           isTrial: false,
           pretestCompleted: isPretestDone,
-          startingLevel: isPretestDone ? (acc.startingLevel || '6A') : null,
-          currentLevel: isPretestDone ? (acc.currentLevel || '6A') : '6A',
-          lastStudiedLevel: acc.lastStudiedLevel || (isPretestDone ? (acc.startingLevel || '6A') : undefined),
-          lastStudiedWorksheet: acc.lastStudiedWorksheet || 1,
-          lastStudiedScore: acc.lastStudiedScore || undefined,
-          lastStudiedAt: acc.lastStudiedAt || undefined,
-          totalWorksheetsCompleted: acc.totalWorksheetsCompleted || 0,
-          totalPoints: acc.totalPoints || 0,
-          streakDays: acc.streakDays || 1,
-          lastStudyDate: acc.lastStudyDate || new Date().toISOString().split('T')[0]
+          startingLevel: assignedStartingLevel,
+          currentLevel: currentLvl,
+          lastStudiedLevel: lastStudiedLvl,
+          lastStudiedWorksheet: lastStudiedWs,
+          lastStudiedScore: lastStudiedScr,
+          lastStudiedAt: lastStudiedTimestamp,
+          totalWorksheetsCompleted: acc.totalWorksheetsCompleted || (isSameStudent ? existing?.totalWorksheetsCompleted : 0) || 0,
+          totalPoints: acc.totalPoints || (isSameStudent ? existing?.totalPoints : 0) || 0,
+          streakDays: acc.streakDays || (isSameStudent ? existing?.streakDays : 1) || 1,
+          lastStudyDate: acc.lastStudyDate || (isSameStudent ? existing?.lastStudyDate : undefined) || new Date().toISOString().split('T')[0]
         };
 
-        if (isPretestDone && acc.levelProgress) {
-          const sanitized = sanitizeStudentLevelProgress(acc.levelProgress, approvedProfile);
-          saveStoredLevelProgress(sanitized);
+        if (isPretestDone) {
+          if (acc.levelProgress) {
+            const sanitized = sanitizeStudentLevelProgress(acc.levelProgress, approvedProfile);
+            saveStoredLevelProgress(sanitized);
+          } else if (isSameStudent && getStoredLevelProgress()) {
+            const existingProgress = getStoredLevelProgress();
+            const sanitized = sanitizeStudentLevelProgress(existingProgress, approvedProfile);
+            saveStoredLevelProgress(sanitized);
+          } else {
+            const targetLevel = approvedProfile.startingLevel || '6A';
+            const freshProgress = generateCleanLevelProgress(targetLevel, true);
+            saveStoredLevelProgress(freshProgress);
+          }
         } else {
-          const targetLevel = approvedProfile.startingLevel || '6A';
-          const freshProgress = generateCleanLevelProgress(targetLevel, true);
+          const freshProgress = generateCleanLevelProgress('6A', true);
           saveStoredLevelProgress(freshProgress);
         }
 
         saveStoredProfile(approvedProfile);
+
+        // Update account cache so pretest state is permanently preserved
+        if (isPretestDone) {
+          upsertStoredAccount({
+            ...acc,
+            pretestCompleted: true,
+            startingLevel: assignedStartingLevel || '6A',
+            currentLevel: currentLvl,
+            lastStudiedLevel: lastStudiedLvl,
+            lastStudiedWorksheet: lastStudiedWs,
+            lastStudiedScore: lastStudiedScr,
+            lastStudiedAt: lastStudiedTimestamp,
+            levelProgress: getStoredLevelProgress(),
+            updatedAt: Date.now()
+          });
+        }
+
         onSuccess(approvedProfile);
         return;
       }

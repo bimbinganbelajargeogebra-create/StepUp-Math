@@ -31,7 +31,8 @@ import {
   upsertStoredAccount,
   generateCleanLevelProgress,
   getStoredProfile,
-  getStoredLevelProgress
+  getStoredLevelProgress,
+  getStoredPretestResult
 } from '../utils/storage';
 
 export interface FirebaseUserData {
@@ -191,8 +192,39 @@ export class FirebaseDatabaseService {
             upsertStoredAccount(account);
           }
         }
+
+        // Secondary check: verify if studentPretests exists in Firestore
+        if (account && !account.pretestCompleted) {
+          const pretestDocRef = doc(db, 'studentPretests', cleanUsername);
+          const pretestDocSnap = await getDoc(pretestDocRef);
+          if (pretestDocSnap.exists()) {
+            const preData = pretestDocSnap.data() as PretestResult;
+            account.pretestCompleted = true;
+            if (preData?.assignedLevel) {
+              account.startingLevel = preData.assignedLevel;
+              account.currentLevel = preData.assignedLevel;
+            }
+            if (preData) {
+              account.pretestResult = preData;
+            }
+            upsertStoredAccount(account);
+          }
+        }
       } catch (cloudErr) {
         console.warn('Firestore login fetch notice (using local cache if present):', cloudErr);
+      }
+
+      // Check local pretest results fallback
+      if (account && !account.pretestCompleted) {
+        const localPretest = getStoredPretestResult();
+        const localProfile = getStoredProfile();
+        if (localPretest && (localProfile?.username?.toLowerCase() === cleanUsername || !localProfile?.username)) {
+          account.pretestCompleted = true;
+          account.startingLevel = localPretest.assignedLevel || account.startingLevel || '6A';
+          account.currentLevel = localPretest.assignedLevel || account.currentLevel || '6A';
+          account.pretestResult = localPretest;
+          upsertStoredAccount(account);
+        }
       }
 
       if (!account) {
@@ -715,6 +747,8 @@ export class FirebaseDatabaseService {
         pretestCompleted: true,
         startingLevel: result.assignedLevel,
         currentLevel: result.assignedLevel,
+        lastStudiedLevel: result.assignedLevel,
+        lastStudiedWorksheet: 1,
         updatedAt: serverTimestamp()
       }, { merge: true });
 
@@ -728,6 +762,8 @@ export class FirebaseDatabaseService {
           pretestCompleted: true,
           startingLevel: result.assignedLevel,
           currentLevel: result.assignedLevel,
+          lastStudiedLevel: result.assignedLevel,
+          lastStudiedWorksheet: 1,
           levelProgress: progress,
           pretestResult: result,
           updatedAt: Date.now()

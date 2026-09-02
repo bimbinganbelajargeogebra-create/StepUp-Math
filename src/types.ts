@@ -97,6 +97,7 @@ export interface UserAccount {
   lastStudiedScore?: number;
   lastStudiedAt?: number;
   pretestCompleted?: boolean;
+  pretestResult?: PretestResult;
   totalWorksheetsCompleted?: number;
   totalPoints?: number;
   streakDays?: number;

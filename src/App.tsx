@@ -240,7 +240,16 @@ export default function App() {
           theme={theme}
           onToggleTheme={handleToggleTheme}
           onComplete={(assignedLevel) => {
-            const updated = getStoredProfile();
+            const currentProf = getStoredProfile() || profile;
+            const updated: StudentProfile = {
+              ...currentProf,
+              pretestCompleted: true,
+              startingLevel: assignedLevel,
+              currentLevel: assignedLevel,
+              lastStudiedLevel: assignedLevel,
+              lastStudiedWorksheet: 1
+            };
+            saveStoredProfile(updated);
             setProfile(updated);
             setLevelProgress(getStoredLevelProgress());
             setPretestResult(getStoredPretestResult());
