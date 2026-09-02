@@ -185,9 +185,22 @@ export class FirebaseDatabaseService {
         if (accountDoc.exists()) {
           const docData = accountDoc.data();
           if (docData) {
+            const hasPretest = Boolean(
+              docData.pretestCompleted ||
+              docData.pretestResult ||
+              (docData.startingLevel && docData.startingLevel !== null)
+            );
+            const assignedLvl = docData.startingLevel || (hasPretest ? (docData.currentLevel || '6A') : null);
             account = {
               username: cleanUsername,
               ...docData,
+              pretestCompleted: hasPretest,
+              startingLevel: assignedLvl,
+              currentLevel: docData.currentLevel || assignedLvl || '6A',
+              lastStudiedLevel: docData.lastStudiedLevel || assignedLvl || '6A',
+              lastStudiedWorksheet: docData.lastStudiedWorksheet || 1,
+              levelProgress: docData.levelProgress || undefined,
+              pretestResult: docData.pretestResult || undefined
             } as UserAccount;
             upsertStoredAccount(account);
           }
@@ -203,12 +216,20 @@ export class FirebaseDatabaseService {
             if (preData?.assignedLevel) {
               account.startingLevel = preData.assignedLevel;
               account.currentLevel = preData.assignedLevel;
+              account.lastStudiedLevel = preData.assignedLevel;
+              account.lastStudiedWorksheet = 1;
             }
             if (preData) {
               account.pretestResult = preData;
             }
             upsertStoredAccount(account);
           }
+        }
+
+        // Check if startingLevel is already assigned
+        if (account && account.startingLevel && account.startingLevel !== null) {
+          account.pretestCompleted = true;
+          upsertStoredAccount(account);
         }
       } catch (cloudErr) {
         console.warn('Firestore login fetch notice (using local cache if present):', cloudErr);
@@ -581,32 +602,43 @@ export class FirebaseDatabaseService {
       const user = await ensureFirebaseAuth();
       if (!user) return false;
 
+      const isDone = Boolean(profile.pretestCompleted || profile.startingLevel);
+      const startingLvl = profile.startingLevel || (isDone ? (profile.currentLevel || '6A') : null);
+
       const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, {
         id: user.uid,
         ...profile,
+        pretestCompleted: isDone,
+        startingLevel: startingLvl,
         updatedAt: serverTimestamp()
       }, { merge: true });
 
       // If profile is linked to a username account, mirror updates to accounts collection
       if (profile.username) {
-        const accountRef = doc(db, 'accounts', profile.username.toLowerCase());
+        const cleanUsername = profile.username.toLowerCase();
+        const accountRef = doc(db, 'accounts', cleanUsername);
+        const currentProgress = getStoredLevelProgress();
+        const pretestRes = getStoredPretestResult();
+
         await setDoc(accountRef, {
           name: profile.name,
           grade: profile.grade,
           school: profile.school || '',
           avatar: profile.avatar,
-          startingLevel: profile.startingLevel,
-          currentLevel: profile.currentLevel,
-          lastStudiedLevel: profile.lastStudiedLevel || profile.currentLevel || null,
+          startingLevel: startingLvl,
+          currentLevel: profile.currentLevel || startingLvl || '6A',
+          lastStudiedLevel: profile.lastStudiedLevel || profile.currentLevel || startingLvl || '6A',
           lastStudiedWorksheet: profile.lastStudiedWorksheet || 1,
           lastStudiedScore: profile.lastStudiedScore || null,
           lastStudiedAt: profile.lastStudiedAt || Date.now(),
-          pretestCompleted: profile.pretestCompleted,
-          totalWorksheetsCompleted: profile.totalWorksheetsCompleted,
-          totalPoints: profile.totalPoints,
-          streakDays: profile.streakDays,
-          lastStudyDate: profile.lastStudyDate,
+          pretestCompleted: isDone,
+          levelProgress: currentProgress || null,
+          pretestResult: pretestRes || null,
+          totalWorksheetsCompleted: profile.totalWorksheetsCompleted || 0,
+          totalPoints: profile.totalPoints || 0,
+          streakDays: profile.streakDays || 1,
+          lastStudyDate: profile.lastStudyDate || '',
           updatedAt: Date.now()
         }, { merge: true });
       }
@@ -639,6 +671,16 @@ export class FirebaseDatabaseService {
         levelProgress: progress,
         updatedAt: serverTimestamp()
       }, { merge: true });
+
+      // If user is a student with username, also mirror to accounts/{username}
+      const profile = getStoredProfile();
+      if (profile?.username) {
+        const accountRef = doc(db, 'accounts', profile.username.toLowerCase());
+        await setDoc(accountRef, {
+          levelProgress: progress,
+          updatedAt: Date.now()
+        }, { merge: true });
+      }
 
       return true;
     } catch (error) {
@@ -794,14 +836,72 @@ export class FirebaseDatabaseService {
   ): Unsubscribe | null {
     let unsubscribeUserDoc: Unsubscribe | null = null;
     let unsubscribePretestDoc: Unsubscribe | null = null;
+    let unsubscribeAccountDoc: Unsubscribe | null = null;
 
     ensureFirebaseAuth().then((user) => {
       if (!user) return;
+
+      const localProf = getStoredProfile();
+      const currentUsername = localProf?.username?.toLowerCase();
+
+      // Listen to registered account doc if student has a username
+      if (currentUsername) {
+        try {
+          const accountRef = doc(db, 'accounts', currentUsername);
+          unsubscribeAccountDoc = onSnapshot(accountRef, (snapshot) => {
+            if (snapshot.exists()) {
+              const accData = snapshot.data();
+              const hasPretest = Boolean(
+                accData.pretestCompleted ||
+                accData.pretestResult ||
+                (accData.startingLevel && accData.startingLevel !== null)
+              );
+              const assignedLvl = accData.startingLevel || (hasPretest ? (accData.currentLevel || '6A') : null);
+
+              const updatedProfile: StudentProfile = {
+                username: currentUsername,
+                name: accData.name || localProf?.name || '',
+                grade: accData.grade || localProf?.grade || '',
+                school: accData.school || localProf?.school || '',
+                avatar: accData.avatar || localProf?.avatar || '🦊',
+                joinedDate: accData.createdAt || localProf?.joinedDate || Date.now(),
+                accessGranted: true,
+                isAdmin: accData.role === 'admin' || localProf?.isAdmin || false,
+                isTrial: false,
+                pretestCompleted: hasPretest,
+                startingLevel: assignedLvl,
+                currentLevel: accData.currentLevel || assignedLvl || '6A',
+                lastStudiedLevel: accData.lastStudiedLevel || assignedLvl || '6A',
+                lastStudiedWorksheet: accData.lastStudiedWorksheet || 1,
+                lastStudiedScore: accData.lastStudiedScore || undefined,
+                lastStudiedAt: accData.lastStudiedAt || undefined,
+                totalWorksheetsCompleted: accData.totalWorksheetsCompleted || 0,
+                totalPoints: accData.totalPoints || 0,
+                streakDays: accData.streakDays || 1,
+                lastStudyDate: accData.lastStudyDate || ''
+              };
+
+              onUpdate({
+                profile: updatedProfile,
+                levelProgress: (accData.levelProgress as Record<KumonLevelId, LevelProgress>) || null,
+                pretestResult: (accData.pretestResult as PretestResult) || null
+              });
+            }
+          }, (err) => {
+            console.warn('Firestore account snapshot notice:', err);
+          });
+        } catch (err) {
+          console.warn('Firestore account subscription error:', err);
+        }
+      }
 
       const userRef = doc(db, 'users', user.uid);
       unsubscribeUserDoc = onSnapshot(userRef, (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.data();
+          const hasPretest = Boolean(data.pretestCompleted || data.startingLevel);
+          const assignedLvl = data.startingLevel || (hasPretest ? (data.currentLevel || '6A') : null);
+
           const profile: StudentProfile = {
             username: data.username || undefined,
             name: data.name || '',
@@ -812,9 +912,13 @@ export class FirebaseDatabaseService {
             accessGranted: data.accessGranted ?? true,
             isAdmin: data.isAdmin || false,
             isTrial: data.isTrial || false,
-            pretestCompleted: data.pretestCompleted || false,
-            startingLevel: data.startingLevel || null,
-            currentLevel: data.currentLevel || '6A',
+            pretestCompleted: hasPretest,
+            startingLevel: assignedLvl,
+            currentLevel: data.currentLevel || assignedLvl || '6A',
+            lastStudiedLevel: data.lastStudiedLevel || assignedLvl || '6A',
+            lastStudiedWorksheet: data.lastStudiedWorksheet || 1,
+            lastStudiedScore: data.lastStudiedScore || undefined,
+            lastStudiedAt: data.lastStudiedAt || undefined,
             totalWorksheetsCompleted: data.totalWorksheetsCompleted || 0,
             totalPoints: data.totalPoints || 0,
             streakDays: data.streakDays || 1,
@@ -850,6 +954,7 @@ export class FirebaseDatabaseService {
     });
 
     return () => {
+      if (unsubscribeAccountDoc) unsubscribeAccountDoc();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
       if (unsubscribePretestDoc) unsubscribePretestDoc();
     };
@@ -926,41 +1031,101 @@ export class FirebaseDatabaseService {
       const user = await ensureFirebaseAuth();
       if (!user) return null;
 
+      const localProf = getStoredProfile();
+      let profile: StudentProfile | undefined;
+      let levelProgress: Record<KumonLevelId, LevelProgress> | undefined;
+      let pretestResult: PretestResult | undefined;
+      let sessionHistory: WorksheetSessionResult[] = [];
+
+      // 1. Authoritative check on accounts collection if username exists
+      if (localProf?.username) {
+        try {
+          const cleanUsername = localProf.username.toLowerCase();
+          const accountRef = doc(db, 'accounts', cleanUsername);
+          const accountSnap = await getDoc(accountRef);
+          if (accountSnap.exists()) {
+            const accData = accountSnap.data();
+            const hasPretest = Boolean(
+              accData.pretestCompleted ||
+              accData.pretestResult ||
+              (accData.startingLevel && accData.startingLevel !== null)
+            );
+            const assignedLvl = accData.startingLevel || (hasPretest ? (accData.currentLevel || '6A') : null);
+
+            profile = {
+              username: localProf.username,
+              name: accData.name || localProf.name,
+              grade: accData.grade || localProf.grade || '',
+              school: accData.school || localProf.school || '',
+              avatar: accData.avatar || localProf.avatar || '🦊',
+              joinedDate: accData.createdAt || localProf.joinedDate || Date.now(),
+              accessGranted: true,
+              isAdmin: accData.role === 'admin' || localProf.isAdmin,
+              isTrial: false,
+              pretestCompleted: hasPretest,
+              startingLevel: assignedLvl,
+              currentLevel: accData.currentLevel || assignedLvl || '6A',
+              lastStudiedLevel: accData.lastStudiedLevel || assignedLvl || '6A',
+              lastStudiedWorksheet: accData.lastStudiedWorksheet || 1,
+              lastStudiedScore: accData.lastStudiedScore || undefined,
+              lastStudiedAt: accData.lastStudiedAt || undefined,
+              totalWorksheetsCompleted: accData.totalWorksheetsCompleted || 0,
+              totalPoints: accData.totalPoints || 0,
+              streakDays: accData.streakDays || 1,
+              lastStudyDate: accData.lastStudyDate || ''
+            };
+
+            if (accData.levelProgress) {
+              levelProgress = accData.levelProgress as Record<KumonLevelId, LevelProgress>;
+            }
+            if (accData.pretestResult) {
+              pretestResult = accData.pretestResult as PretestResult;
+            }
+          }
+        } catch (accErr) {
+          console.warn('Could not fetch accounts doc in loadAllUserData:', accErr);
+        }
+      }
+
+      // 2. Fetch from users/{user.uid}
       const userDocRef = doc(db, 'users', user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
-      if (!userDocSnap.exists()) {
-        return null;
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        const hasPretest = Boolean(userData.pretestCompleted || userData.startingLevel);
+        const assignedLvl = userData.startingLevel || (hasPretest ? (userData.currentLevel || '6A') : null);
+
+        if (!profile) {
+          profile = {
+            username: userData.username || localProf?.username || undefined,
+            name: userData.name || '',
+            grade: userData.grade || '',
+            school: userData.school || '',
+            avatar: userData.avatar || '🦊',
+            joinedDate: userData.joinedDate || Date.now(),
+            accessGranted: userData.accessGranted ?? true,
+            isAdmin: userData.isAdmin || false,
+            isTrial: userData.isTrial || false,
+            pretestCompleted: hasPretest,
+            startingLevel: assignedLvl,
+            currentLevel: userData.currentLevel || assignedLvl || '6A',
+            lastStudiedLevel: userData.lastStudiedLevel || undefined,
+            lastStudiedWorksheet: userData.lastStudiedWorksheet || undefined,
+            lastStudiedScore: userData.lastStudiedScore || undefined,
+            lastStudiedAt: userData.lastStudiedAt || undefined,
+            totalWorksheetsCompleted: userData.totalWorksheetsCompleted || 0,
+            totalPoints: userData.totalPoints || 0,
+            streakDays: userData.streakDays || 1,
+            lastStudyDate: userData.lastStudyDate || ''
+          };
+        }
+        if (!levelProgress && userData?.levelProgress) {
+          levelProgress = userData.levelProgress as Record<KumonLevelId, LevelProgress>;
+        }
       }
 
-      const userData = userDocSnap.data();
-      const profile: StudentProfile = {
-        username: userData.username || undefined,
-        name: userData.name || '',
-        grade: userData.grade || '',
-        school: userData.school || '',
-        avatar: userData.avatar || '🦊',
-        joinedDate: userData.joinedDate || Date.now(),
-        accessGranted: userData.accessGranted ?? true,
-        isAdmin: userData.isAdmin || false,
-        isTrial: userData.isTrial || false,
-        pretestCompleted: userData.pretestCompleted || false,
-        startingLevel: userData.startingLevel || null,
-        currentLevel: userData.currentLevel || '6A',
-        lastStudiedLevel: userData.lastStudiedLevel || undefined,
-        lastStudiedWorksheet: userData.lastStudiedWorksheet || undefined,
-        lastStudiedScore: userData.lastStudiedScore || undefined,
-        lastStudiedAt: userData.lastStudiedAt || undefined,
-        totalWorksheetsCompleted: userData.totalWorksheetsCompleted || 0,
-        totalPoints: userData.totalPoints || 0,
-        streakDays: userData.streakDays || 1,
-        lastStudyDate: userData.lastStudyDate || ''
-      };
-
-      const levelProgress = userData?.levelProgress as Record<KumonLevelId, LevelProgress> | undefined;
-
       // Load session history from subcollection
-      let sessionHistory: WorksheetSessionResult[] = [];
       try {
         const sessionsRef = collection(db, 'users', user.uid, 'sessions');
         const q = query(sessionsRef, orderBy('timestamp', 'desc'), limit(100));
@@ -971,15 +1136,26 @@ export class FirebaseDatabaseService {
       }
 
       // Load pretest
-      let pretestResult: PretestResult | undefined;
-      try {
-        const pretestDocRef = doc(db, 'users', user.uid, 'pretest', 'latest');
-        const pretestSnap = await getDoc(pretestDocRef);
-        if (pretestSnap.exists()) {
-          pretestResult = pretestSnap.data() as PretestResult;
+      if (!pretestResult) {
+        try {
+          const pretestDocRef = doc(db, 'users', user.uid, 'pretest', 'latest');
+          const pretestSnap = await getDoc(pretestDocRef);
+          if (pretestSnap.exists()) {
+            pretestResult = pretestSnap.data() as PretestResult;
+          } else if (localProf?.username) {
+            const studentPretestRef = doc(db, 'studentPretests', localProf.username.toLowerCase());
+            const studentPretestSnap = await getDoc(studentPretestRef);
+            if (studentPretestSnap.exists()) {
+              pretestResult = studentPretestSnap.data() as PretestResult;
+            }
+          }
+        } catch (err) {
+          console.warn('Could not fetch pretest from Firebase:', err);
         }
-      } catch (err) {
-        console.warn('Could not fetch pretest from Firebase:', err);
+      }
+
+      if (profile && (pretestResult || profile.startingLevel)) {
+        profile.pretestCompleted = true;
       }
 
       return {

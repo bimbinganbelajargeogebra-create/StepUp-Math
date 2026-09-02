@@ -88,7 +88,7 @@ export const PretestScreen: React.FC<PretestScreenProps> = ({
       studentName: profile.name
     };
 
-    savePretestResult(pretestRes);
+    savePretestResult(pretestRes, profile.username);
     setResult(pretestRes);
     setIsSubmitted(true);
 

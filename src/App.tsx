@@ -250,6 +250,9 @@ export default function App() {
               lastStudiedWorksheet: 1
             };
             saveStoredProfile(updated);
+            if (updated.username) {
+              FirebaseDatabaseService.saveProfile(updated).catch(err => console.warn('Cloud sync on complete notice:', err));
+            }
             setProfile(updated);
             setLevelProgress(getStoredLevelProgress());
             setPretestResult(getStoredPretestResult());

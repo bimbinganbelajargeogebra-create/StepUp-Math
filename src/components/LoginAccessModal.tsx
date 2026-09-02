@@ -26,7 +26,7 @@ import {
   Calendar,
   Flame
 } from 'lucide-react';
-import { StudentProfile, UserAccount } from '../types';
+import { StudentProfile, UserAccount, PretestResult } from '../types';
 import { 
   ACCESS_CODE, 
   TRIAL_CODE,
@@ -300,6 +300,28 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         };
 
         if (isPretestDone) {
+          if (acc.pretestResult) {
+            try {
+              localStorage.setItem('stepup_math_pretest_result', JSON.stringify(acc.pretestResult));
+            } catch (err) {
+              console.warn('Could not store pretest result in cache', err);
+            }
+          } else if (assignedStartingLevel) {
+            const syntheticPretest: PretestResult = {
+              completedAt: acc.createdAt || Date.now(),
+              assignedLevel: assignedStartingLevel,
+              score: 10,
+              total: 10,
+              breakdown: {},
+              studentName: acc.name
+            };
+            try {
+              localStorage.setItem('stepup_math_pretest_result', JSON.stringify(syntheticPretest));
+            } catch (err) {
+              console.warn('Could not store synthetic pretest in cache', err);
+            }
+          }
+
           if (acc.levelProgress) {
             const sanitized = sanitizeStudentLevelProgress(acc.levelProgress, approvedProfile);
             saveStoredLevelProgress(sanitized);

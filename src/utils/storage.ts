@@ -421,27 +421,32 @@ export function getStoredPretestResult(): PretestResult | null {
   }
 }
 
-export function savePretestResult(result: PretestResult): void {
+export function savePretestResult(result: PretestResult, studentUsername?: string): void {
   try {
     localStorage.setItem(STORAGE_KEYS.PRETEST_RESULT, JSON.stringify(result));
   } catch (e) {
     console.error('Failed to save pretest result', e);
   }
 
+  const profile = getStoredProfile();
+  const targetUsername = studentUsername || profile?.username;
+
   // Cloud sync pretest result in background
-  FirebaseSyncService.syncPretestResultToCloud(result).catch((err) => {
+  FirebaseSyncService.syncPretestResultToCloud(result, targetUsername).catch((err) => {
     console.warn('Background pretest cloud sync deferred:', err);
   });
 
   // Update profile with assigned level
-  const profile = getStoredProfile();
   if (profile) {
-    profile.pretestCompleted = true;
-    profile.startingLevel = result.assignedLevel;
-    profile.currentLevel = result.assignedLevel;
-    profile.lastStudiedLevel = result.assignedLevel;
-    profile.lastStudiedWorksheet = 1;
-    saveStoredProfile(profile);
+    const updatedProfile: StudentProfile = {
+      ...profile,
+      pretestCompleted: true,
+      startingLevel: result.assignedLevel,
+      currentLevel: result.assignedLevel,
+      lastStudiedLevel: result.assignedLevel,
+      lastStudiedWorksheet: 1
+    };
+    saveStoredProfile(updatedProfile);
   }
 
   // Calibrate level progress to strictly unlock up to assigned starting level
@@ -478,15 +483,18 @@ export function savePretestResult(result: PretestResult): void {
   saveStoredLevelProgress(updatedProgress);
 
   // Update account in accounts cache & database
-  if (profile?.username) {
-    const existingAcc = getStoredAccountByUsername(profile.username);
+  if (targetUsername) {
+    const existingAcc = getStoredAccountByUsername(targetUsername);
     if (existingAcc) {
       upsertStoredAccount({
         ...existingAcc,
         pretestCompleted: true,
         startingLevel: result.assignedLevel,
         currentLevel: result.assignedLevel,
+        lastStudiedLevel: result.assignedLevel,
+        lastStudiedWorksheet: 1,
         levelProgress: updatedProgress,
+        pretestResult: result,
         updatedAt: Date.now()
       });
     }
