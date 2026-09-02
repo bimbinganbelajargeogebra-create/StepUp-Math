@@ -448,6 +448,21 @@ export function savePretestResult(result: PretestResult): void {
   }
 
   saveStoredLevelProgress(updatedProgress);
+
+  // Update account in accounts cache & database
+  if (profile?.username) {
+    const existingAcc = getStoredAccountByUsername(profile.username);
+    if (existingAcc) {
+      upsertStoredAccount({
+        ...existingAcc,
+        pretestCompleted: true,
+        startingLevel: result.assignedLevel,
+        currentLevel: result.assignedLevel,
+        levelProgress: updatedProgress,
+        updatedAt: Date.now()
+      });
+    }
+  }
 }
 
 export function logoutStudentSession(): void {

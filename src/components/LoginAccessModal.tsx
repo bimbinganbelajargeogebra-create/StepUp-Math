@@ -248,7 +248,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
 
       if (result.success && result.account) {
         const acc = result.account;
-        const existing = getStoredProfile();
+        const isPretestDone = Boolean(acc.pretestCompleted);
         
         const approvedProfile: StudentProfile = {
           username: acc.username,
@@ -260,20 +260,20 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
           accessGranted: true,
           isAdmin: acc.role === 'admin',
           isTrial: false,
-          pretestCompleted: acc.pretestCompleted ?? (existing?.pretestCompleted || false),
-          startingLevel: acc.startingLevel ?? (existing?.startingLevel || null),
-          currentLevel: acc.currentLevel ?? (existing?.currentLevel || '6A'),
-          totalWorksheetsCompleted: acc.totalWorksheetsCompleted ?? (existing?.totalWorksheetsCompleted || 0),
-          totalPoints: acc.totalPoints ?? (existing?.totalPoints || 0),
-          streakDays: acc.streakDays ?? (existing?.streakDays || 1),
+          pretestCompleted: isPretestDone,
+          startingLevel: isPretestDone ? (acc.startingLevel || '6A') : null,
+          currentLevel: isPretestDone ? (acc.currentLevel || '6A') : '6A',
+          totalWorksheetsCompleted: acc.totalWorksheetsCompleted || 0,
+          totalPoints: acc.totalPoints || 0,
+          streakDays: acc.streakDays || 1,
           lastStudyDate: acc.lastStudyDate || new Date().toISOString().split('T')[0]
         };
 
-        if (acc.levelProgress) {
+        if (isPretestDone && acc.levelProgress) {
           const sanitized = sanitizeStudentLevelProgress(acc.levelProgress, approvedProfile);
           saveStoredLevelProgress(sanitized);
         } else {
-          const targetLevel = approvedProfile.startingLevel || approvedProfile.currentLevel || '6A';
+          const targetLevel = approvedProfile.startingLevel || '6A';
           const freshProgress = generateCleanLevelProgress(targetLevel, true);
           saveStoredLevelProgress(freshProgress);
         }

@@ -28,7 +28,8 @@ import {
   GraduationCap,
   Building2,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  Target
 } from 'lucide-react';
 import { KumonLevelId, StudentProfile, LevelProgress, UserAccount, AccountStatus, WorksheetSessionResult } from '../types';
 import { KUMON_LEVEL_ORDER, KUMON_LEVELS } from '../data/curriculumData';
@@ -119,8 +120,8 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
       const chosenLevel = startingLevel || approvalLevelChoices[username] || '6A';
       const ok = await FirebaseDatabaseService.approveAccount(username, profile?.name || 'Pak GuruAI', chosenLevel);
       if (ok) {
-        setActionSuccessNotice(`Akun @${username} berhasil DISETUJUI dengan Level Awal: ${chosenLevel}!`);
-        setTimeout(() => setActionSuccessNotice(null), 4000);
+        setActionSuccessNotice(`Akun @${username} berhasil DISETUJUI! Siswa otomatis diarahkan mengikuti Pretest Diagnostik (Wajib) saat login pertama untuk penempatan level.`);
+        setTimeout(() => setActionSuccessNotice(null), 5000);
       }
     } catch (e) {
       console.error(e);
@@ -602,9 +603,15 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                               <span>
                                 Terdaftar: {new Date(acc.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                               </span>
-                              {acc.currentLevel && (
-                                <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                                  Level: {acc.currentLevel}
+                              {acc.pretestCompleted ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Pretest Selesai (Level {acc.currentLevel})
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300">
+                                  <Target className="w-3 h-3" />
+                                  Wajib Pretest saat Login
                                 </span>
                               )}
                             </div>

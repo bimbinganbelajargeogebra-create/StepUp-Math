@@ -350,7 +350,7 @@ export class FirebaseDatabaseService {
   }
 
   /**
-   * Approve student account with calibrated level progress
+   * Approve student account with mandatory pretest requirement for new registrations
    */
   static async approveAccount(
     username: string, 
@@ -359,11 +359,13 @@ export class FirebaseDatabaseService {
   ): Promise<boolean> {
     const cleanUsername = username.toLowerCase();
     try {
-      const assignedLevel = startingLevel || '6A';
+      const existing = getStoredAccountByUsername(cleanUsername);
+      // If student hasn't taken pretest yet, pretestCompleted remains FALSE so pretest is mandatory upon login
+      const hasDonePretest = Boolean(existing?.pretestCompleted);
+      const assignedLevel = startingLevel || existing?.startingLevel || existing?.currentLevel || '6A';
       const cleanProgress = generateCleanLevelProgress(assignedLevel, true);
 
       // 1. Update local storage cache immediately
-      const existing = getStoredAccountByUsername(cleanUsername);
       if (existing) {
         upsertStoredAccount({
           ...existing,
@@ -371,10 +373,10 @@ export class FirebaseDatabaseService {
           approvedAt: Date.now(),
           reviewedBy: adminName,
           updatedAt: Date.now(),
-          pretestCompleted: true,
-          startingLevel: assignedLevel,
-          currentLevel: assignedLevel,
-          levelProgress: cleanProgress
+          pretestCompleted: hasDonePretest,
+          startingLevel: hasDonePretest ? (existing.startingLevel || assignedLevel) : null,
+          currentLevel: hasDonePretest ? (existing.currentLevel || assignedLevel) : '6A',
+          levelProgress: existing.levelProgress || cleanProgress
         });
       }
 
@@ -386,10 +388,10 @@ export class FirebaseDatabaseService {
           approvedAt: Date.now(),
           reviewedBy: adminName,
           updatedAt: Date.now(),
-          pretestCompleted: true,
-          startingLevel: assignedLevel,
-          currentLevel: assignedLevel,
-          levelProgress: cleanProgress
+          pretestCompleted: hasDonePretest,
+          startingLevel: hasDonePretest ? (existing?.startingLevel || assignedLevel) : null,
+          currentLevel: hasDonePretest ? (existing?.currentLevel || assignedLevel) : '6A',
+          levelProgress: existing?.levelProgress || cleanProgress
         }, { merge: true }).catch(err => console.warn('Firestore approveAccount write notice:', err));
       }).catch(err => console.warn('Auth notice:', err));
 

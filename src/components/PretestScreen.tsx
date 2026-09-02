@@ -245,7 +245,27 @@ export const PretestScreen: React.FC<PretestScreenProps> = ({
       </header>
 
       {/* Main Question Card Container */}
-      <main className="flex-1 p-3 sm:p-6 lg:p-8 flex items-center justify-center">
+      <main className="flex-1 p-3 sm:p-6 lg:p-8 flex flex-col items-center justify-center max-w-3xl mx-auto w-full">
+        {/* Welcome Notice Banner */}
+        <div className="w-full mb-4 p-3.5 bg-indigo-50/90 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Target className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-indigo-950 dark:text-indigo-200">
+                Pretest Diagnostik Penempatan Level (Wajib)
+              </p>
+              <p className="text-[11px] text-indigo-800/80 dark:text-indigo-300/80">
+                Selamat! Akun Anda telah disetujui Pak GuruAI. Kerjakan pretest ini untuk menentukan titik awal belajar yang paling tepat.
+              </p>
+            </div>
+          </div>
+          <span className="hidden sm:inline-flex px-2.5 py-1 bg-white dark:bg-slate-800 text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 rounded-lg border border-indigo-100 dark:border-indigo-800 shrink-0">
+            Mandiri & Jujur
+          </span>
+        </div>
+
         <div className="w-full max-w-2xl bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-colors duration-200">
           {/* Progress Bar inside Card Header */}
           <div className="bg-slate-50 dark:bg-slate-800/80 p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800">
