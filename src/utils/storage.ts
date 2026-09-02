@@ -330,7 +330,7 @@ export function saveSessionResult(result: WorksheetSessionResult): {
   progress[result.levelId] = lvlProg;
   saveStoredLevelProgress(progress);
 
-  // Update profile points and streak
+  // Update profile points, streak, and last studied position
   const profile = getStoredProfile();
   if (profile) {
     const today = new Date().toISOString().split('T')[0];
@@ -350,7 +350,33 @@ export function saveSessionResult(result: WorksheetSessionResult): {
     profile.totalPoints += Math.round(result.score + (result.isMastered ? 50 : 20));
     profile.streakDays = newStreak;
     profile.lastStudyDate = today;
+    profile.lastStudiedLevel = result.levelId;
+    profile.lastStudiedWorksheet = result.worksheetNum;
+    profile.lastStudiedScore = result.score;
+    profile.lastStudiedAt = result.timestamp;
+    profile.currentLevel = result.levelId;
     saveStoredProfile(profile);
+
+    // Update account in accounts cache & database
+    if (profile.username) {
+      const existingAcc = getStoredAccountByUsername(profile.username);
+      if (existingAcc) {
+        upsertStoredAccount({
+          ...existingAcc,
+          lastStudiedLevel: result.levelId,
+          lastStudiedWorksheet: result.worksheetNum,
+          lastStudiedScore: result.score,
+          lastStudiedAt: result.timestamp,
+          currentLevel: result.levelId,
+          totalWorksheetsCompleted: profile.totalWorksheetsCompleted,
+          totalPoints: profile.totalPoints,
+          streakDays: profile.streakDays,
+          lastStudyDate: profile.lastStudyDate,
+          levelProgress: progress,
+          updatedAt: Date.now()
+        });
+      }
+    }
   }
 
   // Cloud sync session result in background
@@ -413,6 +439,8 @@ export function savePretestResult(result: PretestResult): void {
     profile.pretestCompleted = true;
     profile.startingLevel = result.assignedLevel;
     profile.currentLevel = result.assignedLevel;
+    profile.lastStudiedLevel = result.assignedLevel;
+    profile.lastStudiedWorksheet = 1;
     saveStoredProfile(profile);
   }
 

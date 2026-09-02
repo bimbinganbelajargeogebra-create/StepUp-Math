@@ -92,6 +92,10 @@ export interface UserAccount {
   // Linked student learning progress
   startingLevel?: KumonLevelId | null;
   currentLevel?: KumonLevelId;
+  lastStudiedLevel?: KumonLevelId;
+  lastStudiedWorksheet?: number;
+  lastStudiedScore?: number;
+  lastStudiedAt?: number;
   pretestCompleted?: boolean;
   totalWorksheetsCompleted?: number;
   totalPoints?: number;
@@ -113,6 +117,10 @@ export interface StudentProfile {
   pretestCompleted: boolean;
   startingLevel: KumonLevelId | null;
   currentLevel: KumonLevelId;
+  lastStudiedLevel?: KumonLevelId;
+  lastStudiedWorksheet?: number;
+  lastStudiedScore?: number;
+  lastStudiedAt?: number;
   totalWorksheetsCompleted: number;
   totalPoints: number;
   streakDays: number;

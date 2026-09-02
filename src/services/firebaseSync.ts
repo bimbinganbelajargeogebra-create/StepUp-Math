@@ -566,6 +566,10 @@ export class FirebaseDatabaseService {
           avatar: profile.avatar,
           startingLevel: profile.startingLevel,
           currentLevel: profile.currentLevel,
+          lastStudiedLevel: profile.lastStudiedLevel || profile.currentLevel || null,
+          lastStudiedWorksheet: profile.lastStudiedWorksheet || 1,
+          lastStudiedScore: profile.lastStudiedScore || null,
+          lastStudiedAt: profile.lastStudiedAt || Date.now(),
           pretestCompleted: profile.pretestCompleted,
           totalWorksheetsCompleted: profile.totalWorksheetsCompleted,
           totalPoints: profile.totalPoints,
@@ -636,6 +640,43 @@ export class FirebaseDatabaseService {
         studentName: studentName || 'Siswa StepUp',
         createdAt: serverTimestamp()
       });
+
+      // 3. Update user document with latest learning position and stats
+      const currentProfile = getStoredProfile();
+      const currentProgress = getStoredLevelProgress();
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+        lastStudiedLevel: result.levelId,
+        lastStudiedWorksheet: result.worksheetNum,
+        lastStudiedScore: result.score,
+        lastStudiedAt: result.timestamp,
+        currentLevel: result.levelId,
+        levelProgress: currentProgress,
+        totalWorksheetsCompleted: currentProfile?.totalWorksheetsCompleted || 0,
+        totalPoints: currentProfile?.totalPoints || 0,
+        streakDays: currentProfile?.streakDays || 1,
+        lastStudyDate: currentProfile?.lastStudyDate || '',
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      // 4. Update student account record in accounts collection
+      const targetUsername = currentProfile?.username?.toLowerCase();
+      if (targetUsername) {
+        const accountRef = doc(db, 'accounts', targetUsername);
+        await setDoc(accountRef, {
+          lastStudiedLevel: result.levelId,
+          lastStudiedWorksheet: result.worksheetNum,
+          lastStudiedScore: result.score,
+          lastStudiedAt: result.timestamp,
+          currentLevel: result.levelId,
+          levelProgress: currentProgress,
+          totalWorksheetsCompleted: currentProfile?.totalWorksheetsCompleted || 0,
+          totalPoints: currentProfile?.totalPoints || 0,
+          streakDays: currentProfile?.streakDays || 1,
+          lastStudyDate: currentProfile?.lastStudyDate || '',
+          updatedAt: Date.now()
+        }, { merge: true });
+      }
 
       return true;
     } catch (error) {
@@ -870,6 +911,10 @@ export class FirebaseDatabaseService {
         pretestCompleted: userData.pretestCompleted || false,
         startingLevel: userData.startingLevel || null,
         currentLevel: userData.currentLevel || '6A',
+        lastStudiedLevel: userData.lastStudiedLevel || undefined,
+        lastStudiedWorksheet: userData.lastStudiedWorksheet || undefined,
+        lastStudiedScore: userData.lastStudiedScore || undefined,
+        lastStudiedAt: userData.lastStudiedAt || undefined,
         totalWorksheetsCompleted: userData.totalWorksheetsCompleted || 0,
         totalPoints: userData.totalPoints || 0,
         streakDays: userData.streakDays || 1,

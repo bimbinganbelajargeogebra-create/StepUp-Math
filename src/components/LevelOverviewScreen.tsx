@@ -102,6 +102,34 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
   const totalMastered = Object.values(levelProgress).filter((p: LevelProgress) => p?.mastered).length;
   const totalUnlocked = Object.values(levelProgress).filter((p: LevelProgress) => p?.unlocked).length;
 
+  // Calculate Last Studied & Next Target Worksheet Position
+  const lastStudiedLvl: KumonLevelId = profile.lastStudiedLevel || profile.startingLevel || profile.currentLevel || '6A';
+  const lastStudiedWs: number = profile.lastStudiedWorksheet || 1;
+  const currentLvlProgress = levelProgress[lastStudiedLvl];
+  const isLastWsDone = currentLvlProgress?.completedWorksheets?.includes(lastStudiedWs) || false;
+
+  let nextTargetLevel: KumonLevelId = lastStudiedLvl;
+  let nextTargetWorksheet: number = lastStudiedWs;
+
+  if (isLastWsDone) {
+    if (lastStudiedWs < 10) {
+      nextTargetWorksheet = lastStudiedWs + 1;
+    } else {
+      const currIdx = KUMON_LEVEL_ORDER.indexOf(lastStudiedLvl);
+      if (currIdx !== -1 && currIdx < KUMON_LEVEL_ORDER.length - 1) {
+        const nextLvlId = KUMON_LEVEL_ORDER[currIdx + 1];
+        if (levelProgress[nextLvlId]?.unlocked) {
+          nextTargetLevel = nextLvlId;
+          nextTargetWorksheet = 1;
+        } else {
+          nextTargetWorksheet = 10;
+        }
+      }
+    }
+  }
+
+  const nextLevelInfo = KUMON_LEVELS[nextTargetLevel] || KUMON_LEVELS[lastStudiedLvl];
+
   return (
     <div className="min-h-screen bg-[#F1F5F9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-200">
       {/* Top Header Bar */}
@@ -293,6 +321,67 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                 <span>{totalMastered}</span>
                 <Star className="w-4 h-4 fill-amber-500" />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Continue Learning / Resume Last Studied Worksheet Card */}
+        <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-indigo-800/60 relative overflow-hidden">
+          {/* Subtle background glow element */}
+          <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 relative z-10">
+            <div className="space-y-2 max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-md bg-amber-400/20 text-amber-300 font-extrabold text-[11px] uppercase tracking-wider border border-amber-400/30 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  Lanjutkan Pembelajaran Terakhir
+                </span>
+                <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1.5 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/80">
+                  <Database className="w-3 h-3 text-emerald-400" />
+                  Tersimpan Otomatis di Database
+                </span>
+              </div>
+
+              <div>
+                <h3 className="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
+                  <span>Level {nextTargetLevel} • Lembar Kerja #{nextTargetWorksheet}</span>
+                  <span className="text-xs sm:text-sm font-normal text-indigo-200">({nextLevelInfo.name})</span>
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mt-1">
+                  {profile.lastStudiedAt || (profile.totalWorksheetsCompleted > 0) ? (
+                    <>
+                      Terakhir dipelajari: <strong className="text-white">Level {lastStudiedLvl} #{lastStudiedWs}</strong>
+                      {profile.lastStudiedScore !== undefined ? (
+                        <span> dengan skor <strong className="text-amber-300">{profile.lastStudiedScore}%</strong></span>
+                      ) : null}. Lanjutkan drill sekarang untuk mempertahankan streak dan meningkatkan kecepatan!
+                    </>
+                  ) : (
+                    <>
+                      Hasil penempatan pretest Anda: <strong className="text-white">Level {profile.startingLevel || '6A'}</strong>. Mulai pembelajaran dari Lembar Kerja #1!
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
+              <button
+                id="resume-last-learning-button"
+                type="button"
+                onClick={() => {
+                  if (profile.isTrial && nextTargetWorksheet > 1) {
+                    setTrialNotice('Akun Trial dibatasi hanya untuk Lembar Kerja #1. Gunakan kode "stepup" untuk akses penuh.');
+                    return;
+                  }
+                  onSelectWorksheet(nextTargetLevel, nextTargetWorksheet);
+                }}
+                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black rounded-xl text-sm shadow-md shadow-amber-500/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <Play className="w-4 h-4 fill-slate-950" />
+                <span>Lanjutkan Belajar (Level {nextTargetLevel} #{nextTargetWorksheet})</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
