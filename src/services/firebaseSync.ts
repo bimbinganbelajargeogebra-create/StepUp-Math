@@ -29,7 +29,9 @@ import {
   saveStoredAccounts, 
   getStoredAccountByUsername, 
   upsertStoredAccount,
-  generateCleanLevelProgress 
+  generateCleanLevelProgress,
+  getStoredProfile,
+  getStoredLevelProgress
 } from '../utils/storage';
 
 export interface FirebaseUserData {
@@ -645,7 +647,7 @@ export class FirebaseDatabaseService {
   /**
    * Save pretest placement result in Firebase Firestore
    */
-  static async savePretestResult(result: PretestResult): Promise<boolean> {
+  static async savePretestResult(result: PretestResult, studentUsername?: string): Promise<boolean> {
     try {
       const user = await ensureFirebaseAuth();
       if (!user) return false;
@@ -665,6 +667,40 @@ export class FirebaseDatabaseService {
         userId: user.uid,
         updatedAt: serverTimestamp()
       });
+
+      // 3. User root doc
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+        pretestCompleted: true,
+        startingLevel: result.assignedLevel,
+        currentLevel: result.assignedLevel,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      // 4. Update student account record in Firestore accounts collection
+      const profile = getStoredProfile();
+      const targetUsername = (studentUsername || profile?.username)?.toLowerCase();
+      if (targetUsername) {
+        const progress = getStoredLevelProgress();
+        const accountRef = doc(db, 'accounts', targetUsername);
+        await setDoc(accountRef, {
+          pretestCompleted: true,
+          startingLevel: result.assignedLevel,
+          currentLevel: result.assignedLevel,
+          levelProgress: progress,
+          pretestResult: result,
+          updatedAt: Date.now()
+        }, { merge: true });
+
+        // Update studentPretests lookup
+        const studentPretestRef = doc(db, 'studentPretests', targetUsername);
+        await setDoc(studentPretestRef, {
+          username: targetUsername,
+          userId: user.uid,
+          ...result,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
 
       return true;
     } catch (error) {
