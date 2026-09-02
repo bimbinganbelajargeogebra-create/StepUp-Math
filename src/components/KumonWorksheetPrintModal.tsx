@@ -35,6 +35,8 @@ interface KumonWorksheetPrintModalProps {
   initialWorksheetNum?: number;
   initialMode?: WorksheetPrintMode;
   isAdmin?: boolean;
+  studentCurrentLevel?: KumonLevelId;
+  unlockedLevels?: KumonLevelId[];
   onClose: () => void;
 }
 
@@ -43,15 +45,39 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
   initialWorksheetNum = 1,
   initialMode = 'questions_only',
   isAdmin = false,
+  studentCurrentLevel,
+  unlockedLevels,
   onClose
 }) => {
-  // Allow all users to access single level printable sheets immediately;
-  // Admin password gate is reserved if user switches to batch all 18 levels if not admin.
+  // Determine allowed levels for the user:
+  // Admin gets all 18 levels. Students get only their current level or unlocked levels.
+  const studentEffectiveLevel: KumonLevelId = studentCurrentLevel || initialLevelId || '6A';
+  
+  const availableLevels: KumonLevelId[] = useMemo(() => {
+    if (isAdmin) {
+      return KUMON_LEVEL_ORDER;
+    }
+    if (unlockedLevels && unlockedLevels.length > 0) {
+      return unlockedLevels;
+    }
+    // Fallback: unlock up to studentCurrentLevel
+    const currentIdx = KUMON_LEVEL_ORDER.indexOf(studentEffectiveLevel);
+    const safeIdx = currentIdx !== -1 ? currentIdx : 0;
+    return KUMON_LEVEL_ORDER.slice(0, safeIdx + 1);
+  }, [isAdmin, unlockedLevels, studentEffectiveLevel]);
+
+  // Initial chosen level must be within available levels for students
+  const resolvedInitialLevel: KumonLevelId = useMemo(() => {
+    if (isAdmin) return initialLevelId;
+    if (availableLevels.includes(initialLevelId)) return initialLevelId;
+    return studentEffectiveLevel;
+  }, [isAdmin, availableLevels, initialLevelId, studentEffectiveLevel]);
+
   const [isAuthorized, setIsAuthorized] = useState<boolean>(true);
   const [adminPassInput, setAdminPassInput] = useState<string>('');
   const [authError, setAuthError] = useState<string>('');
 
-  const [selectedLevel, setSelectedLevel] = useState<KumonLevelId | 'ALL'>(initialLevelId);
+  const [selectedLevel, setSelectedLevel] = useState<KumonLevelId | 'ALL'>(resolvedInitialLevel);
   const [selectedWorksheet, setSelectedWorksheet] = useState<number | 'ALL'>(initialWorksheetNum);
   const [printMode, setPrintMode] = useState<WorksheetPrintMode>(initialMode);
 
@@ -68,10 +94,10 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
   // Determine list of levels to render
   const levelsToRender: KumonLevelId[] = useMemo(() => {
     if (selectedLevel === 'ALL') {
-      return KUMON_LEVEL_ORDER;
+      return isAdmin ? KUMON_LEVEL_ORDER : availableLevels;
     }
     return [selectedLevel];
-  }, [selectedLevel]);
+  }, [selectedLevel, isAdmin, availableLevels]);
 
   // Determine list of worksheets to render per level
   const worksheetsToRender: number[] = useMemo(() => {
@@ -291,22 +317,35 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
       {/* Filter and Mode Selector Sub-Bar (Hidden during Print) */}
       <div className="print:hidden bg-slate-800/95 border-b border-slate-700 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
         <div className="flex flex-wrap items-center gap-3">
-          {/* Level selector */}
+          {/* Level indicator / selector */}
           <div className="flex items-center gap-1.5">
             <span className="text-slate-400 font-semibold">Level:</span>
             <select
               value={selectedLevel}
-              onChange={(e) => setSelectedLevel(e.target.value as any)}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'ALL' && !isAdmin) {
+                  return;
+                }
+                setSelectedLevel(val as any);
+              }}
               className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
-              <option value="ALL">★ Semua 18 Level (6A – M)</option>
-              {KUMON_LEVEL_ORDER.map((lvl) => (
+              {isAdmin && <option value="ALL">★ Semua 18 Level (6A – M)</option>}
+              {availableLevels.map((lvl) => (
                 <option key={lvl} value={lvl}>
                   Level {lvl} - {KUMON_LEVELS[lvl].name}
                 </option>
               ))}
             </select>
           </div>
+
+          {!isAdmin && (
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-indigo-950/60 border border-indigo-700/50 rounded-lg text-[11px] text-indigo-300 font-bold">
+              <span>Sesuai Level Siswa:</span>
+              <span className="text-amber-300 font-black">Level {studentEffectiveLevel}</span>
+            </div>
+          )}
 
           {/* Worksheet selector */}
           <div className="flex items-center gap-1.5">

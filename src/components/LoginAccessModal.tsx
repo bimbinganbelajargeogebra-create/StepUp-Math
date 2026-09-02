@@ -180,7 +180,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         unlockAllLevelsAdmin();
         const existing = getStoredProfile();
         const adminProfile: StudentProfile = {
-          name: cleanUsername === 'admin' ? 'Guru Pengajar / Super Admin' : cleanUsername,
+          name: cleanUsername === 'admin' ? 'Pak GuruAI' : cleanUsername,
           grade: 'Admin & Guru Pengajar',
           avatar: '⭐',
           joinedDate: existing?.joinedDate || Date.now(),
@@ -213,7 +213,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         unlockAllLevelsAdmin();
         const existing = getStoredProfile();
         const adminProfile: StudentProfile = {
-          name: 'Guru Pengajar / Super Admin',
+          name: 'Pak GuruAI',
           grade: 'Admin & Guru Pengajar',
           avatar: '⭐',
           joinedDate: existing?.joinedDate || Date.now(),

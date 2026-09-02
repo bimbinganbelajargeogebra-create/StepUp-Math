@@ -26,9 +26,11 @@ import {
   RefreshCw,
   SlidersHorizontal,
   GraduationCap,
-  Building2
+  Building2,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
-import { KumonLevelId, StudentProfile, LevelProgress, UserAccount, AccountStatus } from '../types';
+import { KumonLevelId, StudentProfile, LevelProgress, UserAccount, AccountStatus, WorksheetSessionResult } from '../types';
 import { KUMON_LEVEL_ORDER, KUMON_LEVELS } from '../data/curriculumData';
 import { 
   ACCESS_CODE, 
@@ -44,6 +46,7 @@ import {
 import { FirebaseDatabaseService, FirebaseSyncService } from '../services/firebaseSync';
 import { testFirebaseConnection } from '../lib/firebase';
 import { Cloud, CloudUpload, CloudDownload, Activity } from 'lucide-react';
+import { AdminDailyProgressView } from './AdminDailyProgressView';
 
 interface TeacherAdminModalProps {
   profile: StudentProfile | null;
@@ -64,7 +67,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
   onOpenPrintWorksheets,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'approvals' | 'levels' | 'backup' | 'info'>('approvals');
+  const [activeTab, setActiveTab] = useState<'approvals' | 'daily_progress' | 'levels' | 'backup' | 'info'>('approvals');
   const [importText, setImportText] = useState('');
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -81,6 +84,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
 
   // User Accounts & Approval State
   const [accounts, setAccounts] = useState<UserAccount[]>([]);
+  const [allSessions, setAllSessions] = useState<(WorksheetSessionResult & { studentName?: string; username?: string })[]>([]);
   const [accountsFilter, setAccountsFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [accountsSearch, setAccountsSearch] = useState('');
   const [approvalLevelChoices, setApprovalLevelChoices] = useState<Record<string, KumonLevelId>>({});
@@ -89,14 +93,19 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
   const [actionSuccessNotice, setActionSuccessNotice] = useState<string | null>(null);
   const [processingUsername, setProcessingUsername] = useState<string | null>(null);
 
-  // Real-time listener for registered accounts in Firebase Firestore
+  // Real-time listener for registered accounts and all sessions in Firebase Firestore
   useEffect(() => {
-    const unsub = FirebaseDatabaseService.subscribeToAccounts((fetchedAccounts) => {
+    const unsubAccounts = FirebaseDatabaseService.subscribeToAccounts((fetchedAccounts) => {
       setAccounts(fetchedAccounts);
     });
 
+    const unsubSessions = FirebaseDatabaseService.subscribeToAllSessions((fetchedSessions) => {
+      setAllSessions(fetchedSessions);
+    });
+
     return () => {
-      if (unsub) unsub();
+      if (unsubAccounts) unsubAccounts();
+      if (unsubSessions) unsubSessions();
     };
   }, []);
 
@@ -108,7 +117,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
     setActionSuccessNotice(null);
     try {
       const chosenLevel = startingLevel || approvalLevelChoices[username] || '6A';
-      const ok = await FirebaseDatabaseService.approveAccount(username, profile?.name || 'Admin Guru', chosenLevel);
+      const ok = await FirebaseDatabaseService.approveAccount(username, profile?.name || 'Pak GuruAI', chosenLevel);
       if (ok) {
         setActionSuccessNotice(`Akun @${username} berhasil DISETUJUI dengan Level Awal: ${chosenLevel}!`);
         setTimeout(() => setActionSuccessNotice(null), 4000);
@@ -125,7 +134,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
     setProcessingUsername(username);
     setActionSuccessNotice(null);
     try {
-      const ok = await FirebaseDatabaseService.updateStudentLevel(username, newLevel, profile?.name || 'Admin Guru');
+      const ok = await FirebaseDatabaseService.updateStudentLevel(username, newLevel, profile?.name || 'Pak GuruAI');
       if (ok) {
         setActionSuccessNotice(`Level siswa @${username} berhasil diubah ke Level ${newLevel}. Level terbuka telah dikalibrasi.`);
         setTimeout(() => setActionSuccessNotice(null), 4000);
@@ -146,7 +155,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
     try {
       const ok = await FirebaseDatabaseService.rejectAccount(
         username, 
-        profile?.name || 'Admin Guru', 
+        profile?.name || 'Pak GuruAI', 
         rejectReasonInput.trim()
       );
       if (ok) {
@@ -366,12 +375,12 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-base text-white">Panel Pengajar / Guru Admin</h3>
+                <h3 className="font-extrabold text-base text-white">Panel Pengajar / Pak GuruAI</h3>
                 <span className="px-2 py-0.5 bg-indigo-800/80 text-indigo-200 text-[10px] font-bold rounded-md border border-indigo-700">
                   Database Cloud Live
                 </span>
               </div>
-              <p className="text-xs text-indigo-300">Persetujuan Siswa, Kontrol 18 Level & Manajemen Database</p>
+              <p className="text-xs text-indigo-300">Persetujuan Siswa, Grafik Kemajuan Harian, Kontrol 18 Level &amp; Database</p>
             </div>
           </div>
 
@@ -394,6 +403,12 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
               icon: Users,
               badge: pendingCount > 0 ? pendingCount : null
             },
+            {
+              id: 'daily_progress',
+              label: 'Grafik Kemajuan Siswa',
+              icon: TrendingUp,
+              badge: accounts.length > 0 ? accounts.length : null
+            },
             { id: 'levels', label: 'Buka / Kunci 18 Level', icon: Unlock },
             { id: 'backup', label: 'Sinkronisasi & Cadangan', icon: Database },
             { id: 'info', label: 'Kode Akses & Info', icon: KeyRound }
@@ -415,7 +430,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
                 {tab.badge !== null && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white animate-pulse">
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white">
                     {tab.badge}
                   </span>
                 )}
@@ -433,6 +448,18 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="font-semibold">{actionSuccessNotice}</span>
             </div>
+          )}
+
+          {/* TAB: GRAFIK KEMAJUAN HARIAN SISWA (ALL REGISTERED STUDENTS) */}
+          {activeTab === 'daily_progress' && (
+            <AdminDailyProgressView
+              accounts={accounts}
+              allSessions={allSessions}
+              onSelectStudentForLevelEdit={(username) => {
+                setActiveTab('approvals');
+                setAccountsSearch(username);
+              }}
+            />
           )}
 
           {/* TAB 1: PERSETUJUAN PENDAFTARAN SISWA (APPROVE / REJECT) */}

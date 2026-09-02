@@ -161,7 +161,7 @@ export class FirebaseDatabaseService {
           message: 'Login sebagai Administrator berhasil.',
           account: {
             username: 'admin',
-            name: 'Guru Pengajar / Super Admin',
+            name: 'Pak GuruAI',
             grade: 'Admin & Guru Pengajar',
             avatar: '⭐',
             status: 'approved',
@@ -354,7 +354,7 @@ export class FirebaseDatabaseService {
    */
   static async approveAccount(
     username: string, 
-    adminName: string = 'Admin', 
+    adminName: string = 'Pak GuruAI', 
     startingLevel?: KumonLevelId
   ): Promise<boolean> {
     const cleanUsername = username.toLowerCase();
@@ -371,6 +371,7 @@ export class FirebaseDatabaseService {
           approvedAt: Date.now(),
           reviewedBy: adminName,
           updatedAt: Date.now(),
+          pretestCompleted: true,
           startingLevel: assignedLevel,
           currentLevel: assignedLevel,
           levelProgress: cleanProgress
@@ -385,6 +386,7 @@ export class FirebaseDatabaseService {
           approvedAt: Date.now(),
           reviewedBy: adminName,
           updatedAt: Date.now(),
+          pretestCompleted: true,
           startingLevel: assignedLevel,
           currentLevel: assignedLevel,
           levelProgress: cleanProgress
@@ -404,7 +406,7 @@ export class FirebaseDatabaseService {
   static async updateStudentLevel(
     username: string,
     newLevel: KumonLevelId,
-    adminName: string = 'Admin'
+    adminName: string = 'Pak GuruAI'
   ): Promise<boolean> {
     const cleanUsername = username.toLowerCase();
     try {
@@ -762,6 +764,37 @@ export class FirebaseDatabaseService {
 
     return () => {
       if (unsubscribeSessions) unsubscribeSessions();
+    };
+  }
+
+  /**
+   * Real-time Firestore subscription for all registered students' session history (for Teacher Admin Daily Progress Chart)
+   */
+  static subscribeToAllSessions(
+    onUpdate: (sessions: (WorksheetSessionResult & { studentName?: string; username?: string })[]) => void
+  ): Unsubscribe | null {
+    let unsubscribeAllSessions: Unsubscribe | null = null;
+
+    ensureFirebaseAuth().then(() => {
+      try {
+        const historyRef = collection(db, 'sessionHistory');
+        const q = query(historyRef, orderBy('timestamp', 'desc'), limit(500));
+
+        unsubscribeAllSessions = onSnapshot(q, (snapshot) => {
+          const sessions = snapshot.docs.map(docSnap => docSnap.data() as WorksheetSessionResult & { studentName?: string; username?: string });
+          onUpdate(sessions);
+        }, (err) => {
+          console.warn('Firestore all sessions history listener notice:', err);
+        });
+      } catch (err) {
+        console.warn('subscribeToAllSessions setup notice:', err);
+      }
+    }).catch(err => {
+      console.warn('Auth error in subscribeToAllSessions:', err);
+    });
+
+    return () => {
+      if (unsubscribeAllSessions) unsubscribeAllSessions();
     };
   }
 

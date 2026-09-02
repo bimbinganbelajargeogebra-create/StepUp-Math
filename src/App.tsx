@@ -383,9 +383,17 @@ export default function App() {
       {/* Worksheet PDF Print Modal */}
       {printModalState.isOpen && (
         <KumonWorksheetPrintModal
-          initialLevelId={printModalState.levelId || 'E'}
+          initialLevelId={printModalState.levelId || profile?.currentLevel || 'E'}
           initialWorksheetNum={printModalState.worksheetNum || 1}
           isAdmin={profile?.isAdmin || false}
+          studentCurrentLevel={profile?.currentLevel || profile?.startingLevel || '6A'}
+          unlockedLevels={
+            profile?.isAdmin
+              ? undefined
+              : (Object.keys(levelProgress).filter(
+                  (k) => levelProgress[k as KumonLevelId]?.unlocked
+                ) as KumonLevelId[])
+          }
           onClose={() => setPrintModalState({ isOpen: false })}
         />
       )}

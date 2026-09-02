@@ -55,6 +55,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
   onFinish,
   onExit
 }) => {
+  const profile = getStoredProfile();
   const [questions, setQuestions] = useState<Question[]>(() => {
     try {
       const qList = generateWorksheetQuestions(levelId || '6A', worksheetNum || 1);
@@ -635,7 +636,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
               </button>
 
               <div className="text-center pt-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                @copyright by. Pak GuruAi
+                @copyright by. Pak GuruAI
               </div>
             </div>
           </div>
@@ -647,6 +648,8 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
             initialLevelId={levelId}
             initialWorksheetNum={worksheetNum}
             initialMode={printModalMode}
+            isAdmin={profile?.isAdmin || false}
+            studentCurrentLevel={profile?.currentLevel || levelId}
             onClose={() => setIsPrintModalOpen(false)}
           />
         )}
@@ -1085,6 +1088,8 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
           initialLevelId={levelId}
           initialWorksheetNum={worksheetNum}
           initialMode={printModalMode}
+          isAdmin={profile?.isAdmin || false}
+          studentCurrentLevel={profile?.currentLevel || levelId}
           onClose={() => setIsPrintModalOpen(false)}
         />
       )}
