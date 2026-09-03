@@ -38,6 +38,8 @@ import {
   getStoredProfile,
   getStoredLevelProgress,
   getStoredPretestResult,
+  savePretestResult,
+  getStoredAccountByUsername,
   upsertStoredAccount,
   saveStoredLevelProgress,
   sanitizeStudentLevelProgress,
@@ -363,29 +365,81 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
 
       // 3. Fallback check for standard code 'stepup'
       if (isDirectStepup) {
-        const existing = getStoredProfile();
+        const usernameKey = cleanUsername.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        // Check if accounts/{usernameKey} exists in Firestore first
+        const cloudStatus = await FirebaseDatabaseService.checkAccountStatus(usernameKey);
+        const existingAcc = cloudStatus.account || getStoredAccountByUsername(usernameKey);
+        const existingProf = getStoredProfile();
+
+        const isPretestDone = Boolean(
+          existingAcc?.pretestCompleted ||
+          existingAcc?.pretestResult ||
+          (existingAcc?.startingLevel && existingAcc?.startingLevel !== null) ||
+          (existingProf?.pretestCompleted && (existingProf?.username === usernameKey || !existingProf?.username))
+        );
+
+        const assignedStartingLevel = isPretestDone
+          ? (existingAcc?.startingLevel || existingProf?.startingLevel || existingAcc?.currentLevel || '6A')
+          : null;
+
+        const currentLvl = isPretestDone
+          ? (existingAcc?.currentLevel || existingProf?.currentLevel || assignedStartingLevel || '6A')
+          : '6A';
+
         const studentProfile: StudentProfile = {
-          name: cleanUsername,
-          grade: existing?.grade || 'SD Kelas 3',
-          avatar: existing?.avatar || '🦊',
-          joinedDate: existing?.joinedDate || Date.now(),
+          username: usernameKey,
+          name: existingAcc?.name || cleanUsername,
+          grade: existingAcc?.grade || existingProf?.grade || 'SD Kelas 3',
+          school: existingAcc?.school || existingProf?.school || '',
+          avatar: existingAcc?.avatar || existingProf?.avatar || '🦊',
+          joinedDate: existingAcc?.createdAt || existingProf?.joinedDate || Date.now(),
           accessGranted: true,
           isAdmin: false,
           isTrial: false,
-          pretestCompleted: existing?.pretestCompleted || false,
-          startingLevel: existing?.startingLevel || null,
-          currentLevel: existing?.currentLevel || '6A',
-          totalWorksheetsCompleted: existing?.totalWorksheetsCompleted || 0,
-          totalPoints: existing?.totalPoints || 0,
-          streakDays: existing?.streakDays || 1,
-          lastStudyDate: new Date().toISOString().split('T')[0]
+          pretestCompleted: isPretestDone,
+          startingLevel: assignedStartingLevel,
+          currentLevel: currentLvl,
+          lastStudiedLevel: existingAcc?.lastStudiedLevel || currentLvl,
+          lastStudiedWorksheet: existingAcc?.lastStudiedWorksheet || 1,
+          totalWorksheetsCompleted: existingAcc?.totalWorksheetsCompleted || 0,
+          totalPoints: existingAcc?.totalPoints || 0,
+          streakDays: existingAcc?.streakDays || 1,
+          lastStudyDate: existingAcc?.lastStudyDate || new Date().toISOString().split('T')[0]
         };
 
-        const targetLevel = studentProfile.startingLevel || studentProfile.currentLevel || '6A';
-        const freshProgress = generateCleanLevelProgress(targetLevel, true);
-        saveStoredLevelProgress(freshProgress);
+        if (isPretestDone) {
+          if (existingAcc?.pretestResult) {
+            savePretestResult(existingAcc.pretestResult, usernameKey);
+          }
+          if (existingAcc?.levelProgress) {
+            const sanitized = sanitizeStudentLevelProgress(existingAcc.levelProgress, studentProfile);
+            saveStoredLevelProgress(sanitized);
+          } else {
+            const targetLevel = studentProfile.startingLevel || '6A';
+            const freshProgress = generateCleanLevelProgress(targetLevel, true);
+            saveStoredLevelProgress(freshProgress);
+          }
+        } else {
+          const freshProgress = generateCleanLevelProgress('6A', true);
+          saveStoredLevelProgress(freshProgress);
+        }
 
         saveStoredProfile(studentProfile);
+
+        // Auto register/upsert in Firestore if not already present
+        if (!cloudStatus.exists) {
+          FirebaseDatabaseService.registerAccount({
+            username: usernameKey,
+            name: cleanUsername,
+            password: ACCESS_CODE,
+            grade: studentProfile.grade,
+            school: studentProfile.school,
+            avatar: studentProfile.avatar
+          }).then(() => {
+            FirebaseDatabaseService.approveAccount(usernameKey, 'Auto Direct Code', studentProfile.startingLevel || '6A');
+          }).catch(err => console.warn('Direct register sync:', err));
+        }
+
         onSuccess(studentProfile);
         return;
       }
@@ -422,6 +476,14 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         
         // Auto sign-in if password was entered
         if (loginPassword && loginPassword === acc.password) {
+          const isPretestDone = Boolean(
+            acc.pretestCompleted ||
+            acc.pretestResult ||
+            (acc.startingLevel && acc.startingLevel !== null)
+          );
+          const assignedStartingLevel = isPretestDone ? (acc.startingLevel || '6A') : null;
+          const currentLvl = isPretestDone ? (acc.currentLevel || assignedStartingLevel || '6A') : '6A';
+
           const approvedProfile: StudentProfile = {
             username: acc.username,
             name: acc.name,
@@ -432,19 +494,37 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
             accessGranted: true,
             isAdmin: false,
             isTrial: false,
-            pretestCompleted: acc.pretestCompleted || false,
-            startingLevel: acc.startingLevel || null,
-            currentLevel: acc.currentLevel || '6A',
+            pretestCompleted: isPretestDone,
+            startingLevel: assignedStartingLevel,
+            currentLevel: currentLvl,
+            lastStudiedLevel: acc.lastStudiedLevel || currentLvl,
+            lastStudiedWorksheet: acc.lastStudiedWorksheet || 1,
             totalWorksheetsCompleted: acc.totalWorksheetsCompleted || 0,
             totalPoints: acc.totalPoints || 0,
             streakDays: acc.streakDays || 1,
-            lastStudyDate: new Date().toISOString().split('T')[0]
+            lastStudyDate: acc.lastStudyDate || new Date().toISOString().split('T')[0]
           };
+
+          if (isPretestDone) {
+            if (acc.pretestResult) {
+              savePretestResult(acc.pretestResult, acc.username);
+            }
+            if (acc.levelProgress) {
+              const sanitized = sanitizeStudentLevelProgress(acc.levelProgress, approvedProfile);
+              saveStoredLevelProgress(sanitized);
+            } else {
+              const freshProgress = generateCleanLevelProgress(assignedStartingLevel || '6A', true);
+              saveStoredLevelProgress(freshProgress);
+            }
+          } else {
+            const freshProgress = generateCleanLevelProgress('6A', true);
+            saveStoredLevelProgress(freshProgress);
+          }
 
           saveStoredProfile(approvedProfile);
           setTimeout(() => {
             onSuccess(approvedProfile);
-          }, 1000);
+          }, 800);
         }
       } else if (res.status === 'rejected') {
         setPendingAccount(null);

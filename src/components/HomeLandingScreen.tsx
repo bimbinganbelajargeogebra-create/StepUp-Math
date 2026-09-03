@@ -45,6 +45,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
 }) => {
   const [activeCategory, setActiveCategory] = useState<string>('Semua');
   const [previewLevelId, setPreviewLevelId] = useState<KumonLevelId>('E');
+  const [showPretestChoiceModal, setShowPretestChoiceModal] = useState<boolean>(false);
   
   // Interactive Live Demo Mini Math State
   const [demoInput, setDemoInput] = useState<string>('');
@@ -169,7 +170,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
                 <button
                   id="hero-start-pretest-btn"
                   type="button"
-                  onClick={onStartPretest}
+                  onClick={() => setShowPretestChoiceModal(true)}
                   className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-base rounded-2xl shadow-xl shadow-indigo-600/30 hover:shadow-2xl transition-all cursor-pointer active:scale-95 flex items-center gap-2.5"
                 >
                   <Sparkles className="w-4 h-4 text-amber-300" />
@@ -186,6 +187,22 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
                   <Zap className="w-4 h-4 text-amber-500" />
                   <span>Coba Akses Trial</span>
                 </button>
+              </div>
+
+              {/* Cross-device real-time sync notification */}
+              <div className="pt-1 flex items-center justify-center lg:justify-start gap-2 text-xs text-slate-600 dark:text-slate-300 bg-emerald-50/70 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 max-w-xl">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>
+                  Sudah pernah pretest di HP / laptop lain?{' '}
+                  <button
+                    type="button"
+                    onClick={onOpenLogin}
+                    className="text-indigo-600 dark:text-indigo-400 font-bold underline hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer"
+                  >
+                    Masuk Akun di Sini
+                  </button>{' '}
+                  agar hasil belajar &amp; level Anda langsung tersinkron real-time tanpa perlu pretest ulang.
+                </span>
               </div>
 
               {/* Key Value Points Badges */}
@@ -542,6 +559,60 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
           </div>
         </div>
       </footer>
+      {/* 7. Modal Pilihan Pretest vs Masuk Akun (Cross-Device Sync) */}
+      {showPretestChoiceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 text-slate-800 dark:text-slate-100">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
+              <Sparkles className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                Mulai Pretest atau Masuk Akun?
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Jika Anda sudah pernah mengerjakan tes diagnostik atau memiliki akun di HP/laptop lain, silakan <strong>Masuk Akun</strong> agar level belajar Anda langsung tersinkron real-time tanpa perlu pretest ulang.
+              </p>
+            </div>
+
+            <div className="space-y-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPretestChoiceModal(false);
+                  onOpenLogin();
+                }}
+                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+              >
+                <KeyRound className="w-4 h-4 text-amber-300" />
+                <span>Masuk Akun Saya (Sudah Pernah Pretest)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPretestChoiceModal(false);
+                  onStartPretest();
+                }}
+                className="w-full py-3 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-sm rounded-xl border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+              >
+                <span>Mulai Tes Diagnostik Baru</span>
+              </button>
+            </div>
+
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => setShowPretestChoiceModal(false)}
+                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium cursor-pointer"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -12,6 +12,7 @@ import {
   saveStoredLevelProgress, 
   getStoredSessionHistory, 
   getStoredPretestResult,
+  savePretestResult,
   logoutStudentSession,
   getStoredTheme,
   saveStoredTheme,
@@ -104,13 +105,22 @@ export default function App() {
       setIsCloudReady(true);
     });
 
-    // 2. Subscribe to real-time User Doc updates in Firestore
+    // 2. Subscribe to real-time User & Account Doc updates in Firestore
+    const localProf = getStoredProfile();
+    const targetUsername = (profile?.username || localProf?.username)?.trim().toLowerCase();
+
     const unsubscribeUser = FirebaseDatabaseService.subscribeToUserData((update) => {
-      let currentProf = profile;
+      let currentProf = profile || getStoredProfile();
       if (update.profile) {
-        currentProf = { ...(profile || {}), ...update.profile } as StudentProfile;
+        const prevCompleted = currentProf?.pretestCompleted;
+        const prevStartingLevel = currentProf?.startingLevel;
+        currentProf = { ...(currentProf || {}), ...update.profile } as StudentProfile;
+        if (prevCompleted && !currentProf.pretestCompleted) {
+          currentProf.pretestCompleted = true;
+          currentProf.startingLevel = currentProf.startingLevel || prevStartingLevel;
+        }
         setProfile(currentProf);
-        saveStoredProfile(update.profile);
+        saveStoredProfile(currentProf);
       }
       if (update.levelProgress) {
         const cleanProg = sanitizeStudentLevelProgress(update.levelProgress, currentProf);
@@ -119,8 +129,10 @@ export default function App() {
       }
       if (update.pretestResult) {
         setPretestResult(update.pretestResult);
+        const resolvedUsername = targetUsername || update.profile?.username || currentProf?.username;
+        savePretestResult(update.pretestResult, resolvedUsername);
       }
-    });
+    }, targetUsername);
 
     // 3. Subscribe to real-time Session History in Firestore
     const unsubscribeSessions = FirebaseDatabaseService.subscribeToSessions((sessions) => {
@@ -133,7 +145,7 @@ export default function App() {
       if (unsubscribeUser) unsubscribeUser();
       if (unsubscribeSessions) unsubscribeSessions();
     };
-  }, [syncStorageData]);
+  }, [syncStorageData, profile?.username]);
 
   const handleToggleTheme = () => {
     const nextTheme: AppTheme = theme === 'light' ? 'dark' : 'light';
