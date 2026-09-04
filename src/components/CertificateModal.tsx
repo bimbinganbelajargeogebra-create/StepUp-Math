@@ -139,7 +139,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
               Sertifikat Kelulusan Level
             </h2>
             <p className="text-xs tracking-wider uppercase font-bold text-amber-700/80 mt-0.5">
-              StepUp Math • Sistem Pembelajaran Mandiri Berjenjang
+              AlgoriMath • Sistem Pembelajaran Mandiri Berjenjang
             </p>
           </div>
 

@@ -333,7 +333,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `stepup_math_backup_${profile?.name || 'siswa'}_${Date.now()}.json`;
+    a.download = `algorimath_backup_${profile?.name || 'siswa'}_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };

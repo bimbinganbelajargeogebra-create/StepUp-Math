@@ -266,7 +266,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         if (isPretestDone) {
           if (acc.pretestResult) {
             try {
-              localStorage.setItem('stepup_math_pretest_result', JSON.stringify(acc.pretestResult));
+              savePretestResult(acc.pretestResult);
             } catch (err) {
               console.warn('Could not store pretest result in cache', err);
             }
@@ -280,7 +280,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
               studentName: acc.name
             };
             try {
-              localStorage.setItem('stepup_math_pretest_result', JSON.stringify(syntheticPretest));
+              savePretestResult(syntheticPretest);
             } catch (err) {
               console.warn('Could not store synthetic pretest in cache', err);
             }
@@ -522,7 +522,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
           <div className="flex justify-center mb-2.5">
             <MathLogo size="xl" glow />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-white">StepUp Math</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-white">AlgoriMath</h1>
           <p className="text-slate-400 text-xs mt-0.5">
             Belajar Mandiri Matematika Berjenjang (Level 6A – M)
           </p>
@@ -796,7 +796,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 text-amber-300" />
-                    <span>Masuk ke StepUp Math</span>
+                    <span>Masuk ke AlgoriMath</span>
                   </>
                 )}
               </button>

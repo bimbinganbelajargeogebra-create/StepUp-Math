@@ -322,7 +322,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
             Metode Pembelajaran Mandiri
           </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            5 Pilar Keunggulan StepUp Math
+            5 Pilar Keunggulan AlgoriMath
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
             Membangun rasa percaya diri dan kemandirian siswa melalui latihan bertahap (Small Steps) tanpa rasa cemas.
@@ -553,7 +553,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <MathLogo size="sm" showText subtitle="Belajar Mandiri Berbasis Kecepatan & Ketelitian" />
           <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-[11px]">
-            <span>© {new Date().getFullYear()} StepUp Math Indonesia</span>
+            <span>© {new Date().getFullYear()} AlgoriMath Indonesia</span>
             <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
             <span className="font-bold text-slate-700 dark:text-slate-200">@copyright by. Pak GuruAi</span>
           </div>

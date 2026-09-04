@@ -49,7 +49,7 @@ export const MathLogo: React.FC<MathLogoProps> = ({
         className={`relative flex items-center justify-center font-bold shrink-0 transition-transform ${currentSize.box} ${getBgClass()} ${
           glow ? 'ring-4 ring-indigo-500/20 shadow-lg shadow-indigo-500/30' : ''
         }`}
-        aria-label="StepUp Math Logo"
+        aria-label="AlgoriMath Logo"
       >
         {/* Crisp Mathematical Emblem SVG: Stylized Sigma (∑) & Pi (π) / Function symbol */}
         <svg
@@ -77,7 +77,7 @@ export const MathLogo: React.FC<MathLogoProps> = ({
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5 leading-none">
             <span className={`font-extrabold tracking-tight text-slate-900 dark:text-white ${currentSize.text} ${textClassName}`}>
-              StepUp <span className="text-indigo-600 dark:text-indigo-400">Math</span>
+              Algori<span className="text-indigo-600 dark:text-indigo-400">Math</span>
             </span>
           </div>
           {subtitle && (

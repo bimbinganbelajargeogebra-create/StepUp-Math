@@ -13,7 +13,19 @@ import { KUMON_LEVEL_ORDER } from '../data/curriculumData';
 import { BADGE_DEFINITIONS, evaluateAllBadges } from '../data/badgesData';
 import { FirebaseSyncService } from '../services/firebaseSync';
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
+  PROFILE: 'algorimath_student_profile',
+  LEVEL_PROGRESS: 'algorimath_level_progress',
+  SESSION_HISTORY: 'algorimath_session_history',
+  PRETEST_RESULT: 'algorimath_pretest_result',
+  ADMIN_SETTINGS: 'algorimath_admin_settings',
+  ACCOUNTS_CACHE: 'algorimath_registered_accounts',
+  THEME: 'algorimath_theme',
+  BADGES: 'algorimath_student_badges',
+  JOURNALS: 'algorimath_reflection_journals'
+};
+
+export const LEGACY_STORAGE_KEYS = {
   PROFILE: 'stepup_math_student_profile',
   LEVEL_PROGRESS: 'stepup_math_level_progress',
   SESSION_HISTORY: 'stepup_math_session_history',
@@ -25,11 +37,39 @@ const STORAGE_KEYS = {
   JOURNALS: 'stepup_math_reflection_journals'
 };
 
+// Automatic one-time migration from legacy stepup keys to algorimath keys
+function migrateLegacyStorage() {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    (Object.keys(STORAGE_KEYS) as Array<keyof typeof STORAGE_KEYS>).forEach((k) => {
+      const newKey = STORAGE_KEYS[k];
+      const oldKey = LEGACY_STORAGE_KEYS[k];
+      const oldValue = localStorage.getItem(oldKey);
+      if (oldValue !== null && localStorage.getItem(newKey) === null) {
+        localStorage.setItem(newKey, oldValue);
+      }
+    });
+  } catch (err) {
+    console.warn('Storage migration notice:', err);
+  }
+}
+
+migrateLegacyStorage();
+
+export function getStorageItemWithFallback(key: keyof typeof STORAGE_KEYS): string | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    return localStorage.getItem(STORAGE_KEYS[key]) ?? localStorage.getItem(LEGACY_STORAGE_KEYS[key]);
+  } catch {
+    return null;
+  }
+}
+
 export type AppTheme = 'light' | 'dark';
 
 export function getStoredTheme(): AppTheme {
   try {
-    const saved = localStorage.getItem(STORAGE_KEYS.THEME);
+    const saved = getStorageItemWithFallback('THEME');
     if (saved === 'dark' || saved === 'light') return saved;
     if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
@@ -55,7 +95,7 @@ export function saveStoredTheme(theme: AppTheme): void {
   }
 }
 
-export const ACCESS_CODE = 'stepup';
+export const ACCESS_CODE = 'algorimath';
 export const TRIAL_CODE = 'trial';
 export const ADMIN_PASSWORD = 'bajuri39';
 
@@ -100,7 +140,7 @@ export function unlockAllLevelsAdmin(): Record<KumonLevelId, LevelProgress> {
 
 export function getStoredProfile(): StudentProfile | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.PROFILE);
+    const raw = getStorageItemWithFallback('PROFILE');
     if (!raw) return null;
     return JSON.parse(raw);
   } catch (e) {
@@ -212,7 +252,7 @@ export function sanitizeStudentLevelProgress(
 
 export function getStoredLevelProgress(): Record<KumonLevelId, LevelProgress> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.LEVEL_PROGRESS);
+    const raw = getStorageItemWithFallback('LEVEL_PROGRESS');
     if (raw) {
       const parsed = JSON.parse(raw);
       const profile = getStoredProfile();
@@ -244,7 +284,7 @@ export function saveStoredLevelProgress(progress: Record<KumonLevelId, LevelProg
 
 export function getStoredSessionHistory(): WorksheetSessionResult[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.SESSION_HISTORY);
+    const raw = getStorageItemWithFallback('SESSION_HISTORY');
     if (!raw) return [];
     return JSON.parse(raw);
   } catch (e) {
@@ -412,7 +452,7 @@ export function saveSessionResult(result: WorksheetSessionResult): {
 
 export function getStoredPretestResult(): PretestResult | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.PRETEST_RESULT);
+    const raw = getStorageItemWithFallback('PRETEST_RESULT');
     if (!raw) return null;
     return JSON.parse(raw);
   } catch (e) {
@@ -513,12 +553,8 @@ export function logoutStudentSession(): void {
 }
 
 export function resetAllDeviceData(): void {
-  localStorage.removeItem(STORAGE_KEYS.PROFILE);
-  localStorage.removeItem(STORAGE_KEYS.LEVEL_PROGRESS);
-  localStorage.removeItem(STORAGE_KEYS.SESSION_HISTORY);
-  localStorage.removeItem(STORAGE_KEYS.PRETEST_RESULT);
-  localStorage.removeItem(STORAGE_KEYS.BADGES);
-  localStorage.removeItem(STORAGE_KEYS.JOURNALS);
+  Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
+  Object.values(LEGACY_STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
 }
 
 export function exportDeviceBackupJSON(): string {
@@ -554,7 +590,7 @@ export function importDeviceBackupJSON(jsonString: string): boolean {
 
 export function getStoredBadges(): UnlockedBadge[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.BADGES);
+    const raw = getStorageItemWithFallback('BADGES');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -626,7 +662,7 @@ export function checkAndTriggerBadgesEvaluation(): {
 
 export function getStoredReflectionJournals(): ReflectionJournalEntry[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.JOURNALS);
+    const raw = getStorageItemWithFallback('JOURNALS');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -709,7 +745,7 @@ export function deleteStoredReflectionJournal(journalId: string): ReflectionJour
 // Local accounts cache helpers for offline-first resilience
 export function getStoredAccounts(): UserAccount[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.ACCOUNTS_CACHE);
+    const raw = getStorageItemWithFallback('ACCOUNTS_CACHE');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];

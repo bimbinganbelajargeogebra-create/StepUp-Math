@@ -84,7 +84,7 @@ export async function testFirebaseConnection(): Promise<{
     await setDoc(testDocRef, {
       lastPing: serverTimestamp(),
       clientTimestamp: Date.now(),
-      appName: 'StepUp Kumon Math',
+      appName: 'AlgoriMath',
       platform: 'web'
     }, { merge: true });
 

@@ -252,7 +252,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
     const journalEntry: ReflectionJournalEntry = {
       id: `journal-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      studentName: profile?.name || 'Siswa StepUp',
+      studentName: profile?.name || 'Siswa AlgoriMath',
       studentUsername: profile?.username,
       timestamp: Date.now(),
       dateStr,
@@ -710,7 +710,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
               <div className="hidden md:flex flex-col">
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Status Akses</span>
-                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">STEPUP-VERIFIED</span>
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">ALGORIMATH-VERIFIED</span>
               </div>
             </>
           )}

@@ -1,4 +1,4 @@
-# StepUp Math (Self-Paced Math Learning Platform)
+# AlgoriMath (Self-Paced Math Learning Platform)
 
 Aplikasi pembelajaran matematika mandiri 18 Level (Level 6A s.d. Level M) berbasis metode bertingkat (Small Steps) dengan Tes Diagnostik, Study Streak Tracker, Papan Coretan Virtual, KaTeX Math Formula, dan Cetak Lembar Kerja A4 PDF.
 
@@ -27,7 +27,7 @@ git init
 git add .
 
 # 3. Buat commit pertama
-git commit -m "feat: initial commit StepUp Math app"
+git commit -m "feat: initial commit AlgoriMath app"
 
 # 4. Ganti branch ke main
 git branch -M main
@@ -46,13 +46,13 @@ git push -u origin main
 ##### Cara A: Lewat Dashboard Web Vercel
 1. Buka [https://vercel.com](https://vercel.com) dan login (bisa menggunakan akun GitHub).
 2. Klik tombol **"Add New..."** > **"Project"**.
-3. Pilih repository GitHub `stepup-math` yang baru saja Anda push.
+3. Pilih repository GitHub `algorimath` yang baru saja Anda push.
 4. Di bagian pengaturan proyek:
    - **Framework Preset**: `Vite`
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
    - **Install Command**: `npm install`
-5. Klik **"Deploy"**. Vercel akan otomatis melakukan build dan memberikan link website aktif (misal: `https://stepup-math.vercel.app`).
+5. Klik **"Deploy"**. Vercel akan otomatis melakukan build dan memberikan link website aktif (misal: `https://algorimath.vercel.app`).
 
 ##### Cara B: Menggunakan Vercel CLI
 ```bash

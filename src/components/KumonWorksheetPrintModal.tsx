@@ -140,7 +140,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StepUp Math - ${modeLabel} - Level ${selectedLevel} (${selectedWorksheet === 'ALL' ? 'Semua Lembar' : 'Lembar ' + selectedWorksheet})</title>
+  <title>AlgoriMath - ${modeLabel} - Level ${selectedLevel} (${selectedWorksheet === 'ALL' ? 'Semua Lembar' : 'Lembar ' + selectedWorksheet})</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -175,8 +175,8 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
 </html>`;
 
     const filePrefix = 
-      printMode === 'full_solutions' ? 'Pembahasan-Lengkap-StepUpMath' :
-      printMode === 'with_answers' ? 'Soal-Dan-Kunci-StepUpMath' : 'Lembar-Soal-StepUpMath';
+      printMode === 'full_solutions' ? 'Pembahasan-Lengkap-AlgoriMath' :
+      printMode === 'with_answers' ? 'Soal-Dan-Kunci-AlgoriMath' : 'Lembar-Soal-AlgoriMath';
 
     const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -446,7 +446,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
                     <div className="flex items-center gap-2">
                       <MathLogo size="sm" variant="monochrome" />
                       <span className="text-[11px] font-black tracking-wider text-slate-800 uppercase">
-                        StepUp Math • Pembelajaran Mandiri
+                        AlgoriMath • Pembelajaran Mandiri
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2 mt-1">
@@ -713,7 +713,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
               {/* 4. Footer Standard */}
               <div className="mt-4 pt-2 border-t-2 border-black flex flex-col sm:flex-row items-center justify-between text-[10px] text-black font-bold gap-1">
                 <div>
-                  StepUp Math • {printMode === 'full_solutions' ? 'Kunci & Pembahasan' : 'Lembar Mandiri'} Level {sheet.levelId} (Lembar {sheet.worksheetNum} / 10)
+                  AlgoriMath • {printMode === 'full_solutions' ? 'Kunci & Pembahasan' : 'Lembar Mandiri'} Level {sheet.levelId} (Lembar {sheet.worksheetNum} / 10)
                 </div>
                 <div className="font-extrabold text-black tracking-wide">
                   @copyright by. Pak GuruAI

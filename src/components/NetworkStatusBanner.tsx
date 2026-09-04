@@ -50,7 +50,7 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({ onSync
 
     // Also listen to storage changes from other tabs to ensure total multi-tab sync
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key && e.key.startsWith('stepup_math_')) {
+      if (e.key && (e.key.startsWith('algorimath_') || e.key.startsWith('stepup_math_'))) {
         if (onSyncWithStorage) {
           onSyncWithStorage();
         }

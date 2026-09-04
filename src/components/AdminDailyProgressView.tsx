@@ -416,7 +416,7 @@ export const AdminDailyProgressView: React.FC<AdminDailyProgressViewProps> = ({
               <span>Daftar &amp; Rincian Kemajuan Seluruh Siswa Terdaftar</span>
             </h4>
             <p className="text-xs text-slate-400">
-              Menampilkan {filteredAccounts.length} dari {accounts.length} siswa terdaftar di database StepUp Math.
+              Menampilkan {filteredAccounts.length} dari {accounts.length} siswa terdaftar di database AlgoriMath.
             </p>
           </div>
 

@@ -88,7 +88,7 @@ export const ReflectionJournalModal: React.FC<ReflectionJournalModalProps> = ({
 
     const newEntry: ReflectionJournalEntry = {
       id: `journal-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      studentName: profile?.name || 'Siswa StepUp',
+      studentName: profile?.name || 'Siswa AlgoriMath',
       studentUsername: profile?.username,
       timestamp: Date.now(),
       dateStr,

@@ -140,7 +140,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
             <MathLogo size="md" />
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white tracking-tight">StepUp Math</h1>
+                <h1 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white tracking-tight">AlgoriMath</h1>
                 <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-800 uppercase tracking-wide hidden sm:inline">
                   Kurikulum Mandiri (6A – M)
                 </span>

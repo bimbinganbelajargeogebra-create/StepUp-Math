@@ -819,7 +819,7 @@ export class FirebaseDatabaseService {
       await setDoc(userSessionRef, {
         ...result,
         userId: user.uid,
-        studentName: studentName || 'Siswa StepUp',
+        studentName: studentName || 'Siswa AlgoriMath',
         createdAt: serverTimestamp()
       });
 
@@ -828,7 +828,7 @@ export class FirebaseDatabaseService {
       await setDoc(rootSessionRef, {
         ...result,
         userId: user.uid,
-        studentName: studentName || 'Siswa StepUp',
+        studentName: studentName || 'Siswa AlgoriMath',
         createdAt: serverTimestamp()
       });
 

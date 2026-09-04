@@ -184,7 +184,7 @@ export default function App() {
     setProfile(trialProfile);
     setShowLoginModal(false);
     setShowHomeViewLoggedIn(false);
-    showToast('Akses Uji Coba (Trial) aktif! Selamat belajar di StepUp Math.');
+    showToast('Akses Uji Coba (Trial) aktif! Selamat belajar di AlgoriMath.');
   };
 
   const handleLogout = () => {
@@ -213,7 +213,7 @@ export default function App() {
               setProfile(newProfile);
               setLevelProgress(getStoredLevelProgress());
               setShowLoginModal(false);
-              showToast(`Selamat datang di StepUp Math, ${newProfile.name}!`);
+              showToast(`Selamat datang di AlgoriMath, ${newProfile.name}!`);
             }}
           />
         );

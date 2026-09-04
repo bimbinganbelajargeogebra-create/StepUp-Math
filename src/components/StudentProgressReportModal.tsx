@@ -181,7 +181,7 @@ export const StudentProgressReportModal: React.FC<StudentProgressReportModalProp
                 <div className="flex items-center gap-2 mb-1">
                   <MathLogo size="sm" variant="monochrome" />
                   <span className="font-extrabold text-base tracking-tight text-slate-900">
-                    STEPUP MATH INDONESIA
+                    ALGORIMATH INDONESIA
                   </span>
                 </div>
                 <h1 className="text-lg sm:text-xl font-black uppercase tracking-tight text-slate-900">
@@ -441,7 +441,7 @@ export const StudentProgressReportModal: React.FC<StudentProgressReportModalProp
                 </div>
 
                 <div className="flex flex-col justify-between h-24 border-b border-slate-400 pb-1">
-                  <span className="text-slate-500 font-bold uppercase">Guru Pembimbing StepUp</span>
+                  <span className="text-slate-500 font-bold uppercase">Guru Pembimbing AlgoriMath</span>
                   <span className="text-slate-900 font-bold">( Pembimbing Matematika )</span>
                 </div>
               </div>
@@ -449,7 +449,7 @@ export const StudentProgressReportModal: React.FC<StudentProgressReportModalProp
 
             {/* Bottom print watermark */}
             <div className="mt-5 flex items-center justify-between text-[9px] text-slate-500 uppercase tracking-wider font-semibold border-t border-slate-200 pt-2">
-              <span>STEPUP MATH • AUTOMATED STUDENT PROGRESS REPORT</span>
+              <span>ALGORIMATH • AUTOMATED STUDENT PROGRESS REPORT</span>
               <span className="font-bold text-slate-800">@copyright by. Pak GuruAI</span>
               <span>DOKUMEN RESMI HASIL LATIHAN MANDIRI</span>
             </div>
