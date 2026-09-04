@@ -273,7 +273,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
               <div>
                 <strong className="text-sm font-bold text-amber-950 dark:text-amber-100 block">Akses Akun Uji Coba (Trial Mode)</strong>
                 <p className="text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
-                  Anda dapat mencoba Tes Diagnostik & Level Penempatan (<strong>Level {profile.startingLevel || '6A'}</strong>, Lembar Kerja #1). Untuk membuka seluruh 10 lembar kerja dan 18 level lengkap tanpa batas, gunakan kode siswa <code>stepup</code> saat login.
+                  Anda dapat mencoba Tes Diagnostik & Level Penempatan (<strong>Level {profile.startingLevel || '6A'}</strong>, Lembar Kerja #1). Untuk membuka seluruh 10 lembar kerja dan 18 level lengkap tanpa batas, silakan masuk menggunakan akun siswa yang telah didaftarkan dan disetujui Guru.
                 </p>
               </div>
             </div>
@@ -371,7 +371,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                 type="button"
                 onClick={() => {
                   if (profile.isTrial && nextTargetWorksheet > 1) {
-                    setTrialNotice('Akun Trial dibatasi hanya untuk Lembar Kerja #1. Gunakan kode "stepup" untuk akses penuh.');
+                    setTrialNotice('Akun Trial dibatasi hanya untuk Lembar Kerja #1. Silakan masuk menggunakan akun siswa yang telah disetujui Guru untuk akses penuh.');
                     return;
                   }
                   onSelectWorksheet(nextTargetLevel, nextTargetWorksheet);
@@ -799,7 +799,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                       {isLockedByTrial ? (
                         <button
                           type="button"
-                          onClick={() => setTrialNotice(`Lembar #${wNum} hanya tersedia pada Akun Siswa Penuh. Silakan masuk menggunakan kode akses "stepup" untuk membuka seluruh lembar kerja.`)}
+                          onClick={() => setTrialNotice(`Lembar #${wNum} hanya tersedia pada Akun Siswa Penuh. Silakan masuk menggunakan akun siswa yang telah disetujui Guru untuk membuka seluruh lembar kerja.`)}
                           className="px-2.5 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-lg text-xs flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <Lock className="w-3 h-3" />
@@ -859,7 +859,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                   }}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
                 >
-                  Masuk Akun Penuh (stepup)
+                  Masuk Akun Siswa
                 </button>
               )}
             </div>

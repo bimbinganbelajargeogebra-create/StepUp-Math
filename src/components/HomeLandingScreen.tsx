@@ -520,7 +520,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
               Siap Memulai Langkah Pertama Belajar Matematika Mandiri?
             </h2>
             <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed">
-              Ikuti tes diagnostik gratis atau masukkan kode siswa untuk membuka seluruh kurikulum 18 level.
+              Ikuti tes diagnostik penempatan atau masuk dengan akun siswa terdaftar yang telah disetujui untuk membuka seluruh kurikulum 18 level.
             </p>
           </div>
 
@@ -532,7 +532,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
               className="w-full sm:w-auto px-6 py-3.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-sm rounded-2xl shadow-lg transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
             >
               <KeyRound className="w-4 h-4 text-amber-300" />
-              <span>Masuk dengan Kode Siswa</span>
+              <span>Masuk Akun Siswa</span>
             </button>
 
             <button

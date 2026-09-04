@@ -310,7 +310,7 @@ export default function App() {
         onToggleTheme={handleToggleTheme}
         onSelectWorksheet={(levelId, worksheetNum) => {
           if (profile.isTrial && worksheetNum > 1) {
-            showToast('Akun Trial dibatasi hanya untuk Lembar Kerja #1. Gunakan kode "stepup" untuk akses penuh.');
+            showToast('Akun Trial dibatasi hanya untuk Lembar Kerja #1. Silakan masuk menggunakan akun siswa yang telah disetujui Guru untuk akses penuh.');
             return;
           }
           setActiveSession({ levelId, worksheetNum });

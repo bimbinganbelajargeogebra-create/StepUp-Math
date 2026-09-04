@@ -314,13 +314,13 @@ export class FirebaseDatabaseService {
         return { success: false, message: 'Password salah. Silakan periksa kembali.' };
       }
 
-      // Check approval status
+      // Check approval status: students must be approved by Teacher/Admin
       if (account.status === 'pending') {
         return {
           success: false,
           status: 'pending',
           account,
-          message: 'Akun Anda sedang dalam proses verifikasi (Menunggu Approval Guru / Admin). Silakan hubungi pengajar Anda.'
+          message: 'Akun Anda sedang dalam proses verifikasi (Menunggu Approval Guru / Admin). Silakan hubungi guru Anda untuk menyetujui akun Anda di Panel Admin.'
         };
       }
 
@@ -330,6 +330,15 @@ export class FirebaseDatabaseService {
           status: 'rejected',
           account,
           message: `Pendaftaran Anda tidak disetujui (Ditolak).${account.rejectionReason ? ` Alasan: "${account.rejectionReason}"` : ''} Silakan hubungi Guru Anda.`
+        };
+      }
+
+      if (account.role !== 'admin' && account.status !== 'approved') {
+        return {
+          success: false,
+          status: account.status || 'pending',
+          account,
+          message: 'Akun Anda belum disetujui (Approve) oleh Guru / Admin. Akses login hanya untuk akun yang sudah didaftarkan dan telah disetujui.'
         };
       }
 

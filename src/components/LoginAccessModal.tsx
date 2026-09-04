@@ -28,11 +28,8 @@ import {
 } from 'lucide-react';
 import { StudentProfile, UserAccount, PretestResult } from '../types';
 import { 
-  ACCESS_CODE, 
-  TRIAL_CODE,
   ADMIN_PASSWORD,
   verifyAdminPassword, 
-  verifyTrialAccess,
   unlockAllLevelsAdmin, 
   saveStoredProfile, 
   getStoredProfile,
@@ -125,34 +122,6 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
     }
   };
 
-  // Quick Trial Mode
-  const handleQuickTrial = () => {
-    setError('');
-    setPendingAccount(null);
-    setRejectedAccount(null);
-    
-    const existing = getStoredProfile();
-    const trialProfile: StudentProfile = {
-      name: 'Siswa Trial',
-      grade: 'SD Kelas 3',
-      avatar: '🦊',
-      joinedDate: existing?.joinedDate || Date.now(),
-      accessGranted: true,
-      isAdmin: false,
-      isTrial: true,
-      pretestCompleted: existing?.pretestCompleted && existing?.isTrial ? existing.pretestCompleted : false,
-      startingLevel: existing?.isTrial ? existing.startingLevel : null,
-      currentLevel: existing?.isTrial ? existing.currentLevel : '6A',
-      totalWorksheetsCompleted: existing?.isTrial ? existing.totalWorksheetsCompleted : 0,
-      totalPoints: existing?.isTrial ? existing.totalPoints : 0,
-      streakDays: existing?.isTrial ? existing.streakDays : 1,
-      lastStudyDate: new Date().toISOString().split('T')[0]
-    };
-
-    saveStoredProfile(trialProfile);
-    onSuccess(trialProfile);
-  };
-
   // Handle Login Submit
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,10 +145,8 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
     setIsSubmittingLogin(true);
 
     try {
-      // 1. Check if user is typing legacy/direct codes: "stepup", "trial", or admin password directly
+      // 1. Check if user is typing admin credentials
       const isDirectAdmin = verifyAdminPassword(cleanPassword) || (cleanUsername.toLowerCase() === 'admin' && verifyAdminPassword(cleanPassword));
-      const isDirectTrial = verifyTrialAccess(cleanPassword) || verifyTrialAccess(cleanUsername);
-      const isDirectStepup = cleanPassword.toLowerCase() === ACCESS_CODE.toLowerCase();
 
       if (isDirectAdmin) {
         unlockAllLevelsAdmin();
@@ -203,11 +170,6 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
 
         saveStoredProfile(adminProfile);
         onSuccess(adminProfile);
-        return;
-      }
-
-      if (isDirectTrial) {
-        handleQuickTrial();
         return;
       }
 
@@ -363,88 +325,10 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         return;
       }
 
-      // 3. Fallback check for standard code 'stepup'
-      if (isDirectStepup) {
-        const usernameKey = cleanUsername.toLowerCase().replace(/[^a-z0-9_]/g, '');
-        // Check if accounts/{usernameKey} exists in Firestore first
-        const cloudStatus = await FirebaseDatabaseService.checkAccountStatus(usernameKey);
-        const existingAcc = cloudStatus.account || getStoredAccountByUsername(usernameKey);
-        const existingProf = getStoredProfile();
-
-        const isPretestDone = Boolean(
-          existingAcc?.pretestCompleted ||
-          existingAcc?.pretestResult ||
-          (existingAcc?.startingLevel && existingAcc?.startingLevel !== null) ||
-          (existingProf?.pretestCompleted && (existingProf?.username === usernameKey || !existingProf?.username))
-        );
-
-        const assignedStartingLevel = isPretestDone
-          ? (existingAcc?.startingLevel || existingProf?.startingLevel || existingAcc?.currentLevel || '6A')
-          : null;
-
-        const currentLvl = isPretestDone
-          ? (existingAcc?.currentLevel || existingProf?.currentLevel || assignedStartingLevel || '6A')
-          : '6A';
-
-        const studentProfile: StudentProfile = {
-          username: usernameKey,
-          name: existingAcc?.name || cleanUsername,
-          grade: existingAcc?.grade || existingProf?.grade || 'SD Kelas 3',
-          school: existingAcc?.school || existingProf?.school || '',
-          avatar: existingAcc?.avatar || existingProf?.avatar || '🦊',
-          joinedDate: existingAcc?.createdAt || existingProf?.joinedDate || Date.now(),
-          accessGranted: true,
-          isAdmin: false,
-          isTrial: false,
-          pretestCompleted: isPretestDone,
-          startingLevel: assignedStartingLevel,
-          currentLevel: currentLvl,
-          lastStudiedLevel: existingAcc?.lastStudiedLevel || currentLvl,
-          lastStudiedWorksheet: existingAcc?.lastStudiedWorksheet || 1,
-          totalWorksheetsCompleted: existingAcc?.totalWorksheetsCompleted || 0,
-          totalPoints: existingAcc?.totalPoints || 0,
-          streakDays: existingAcc?.streakDays || 1,
-          lastStudyDate: existingAcc?.lastStudyDate || new Date().toISOString().split('T')[0]
-        };
-
-        if (isPretestDone) {
-          if (existingAcc?.pretestResult) {
-            savePretestResult(existingAcc.pretestResult, usernameKey);
-          }
-          if (existingAcc?.levelProgress) {
-            const sanitized = sanitizeStudentLevelProgress(existingAcc.levelProgress, studentProfile);
-            saveStoredLevelProgress(sanitized);
-          } else {
-            const targetLevel = studentProfile.startingLevel || '6A';
-            const freshProgress = generateCleanLevelProgress(targetLevel, true);
-            saveStoredLevelProgress(freshProgress);
-          }
-        } else {
-          const freshProgress = generateCleanLevelProgress('6A', true);
-          saveStoredLevelProgress(freshProgress);
-        }
-
-        saveStoredProfile(studentProfile);
-
-        // Auto register/upsert in Firestore if not already present
-        if (!cloudStatus.exists) {
-          FirebaseDatabaseService.registerAccount({
-            username: usernameKey,
-            name: cleanUsername,
-            password: ACCESS_CODE,
-            grade: studentProfile.grade,
-            school: studentProfile.school,
-            avatar: studentProfile.avatar
-          }).then(() => {
-            FirebaseDatabaseService.approveAccount(usernameKey, 'Auto Direct Code', studentProfile.startingLevel || '6A');
-          }).catch(err => console.warn('Direct register sync:', err));
-        }
-
-        onSuccess(studentProfile);
-        return;
-      }
-
-      setError(result.message || 'Username atau password tidak sesuai.');
+      setError(
+        result.message || 
+        'Username atau password tidak sesuai. Akses login siswa hanya untuk akun yang sudah didaftarkan dan telah disetujui (Approve) oleh Guru / Admin.'
+      );
     } catch (err: any) {
       console.error(err);
       setError('Terjadi kendala saat login. Periksa koneksi internet Anda.');
@@ -816,25 +700,6 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
             </div>
           )}
 
-          {/* Quick Trial Banner */}
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800 rounded-2xl flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-              <div>
-                <span className="font-bold text-amber-900 dark:text-amber-200 block">Coba Tanpa Akun Dulu?</span>
-                <span className="text-amber-700 dark:text-amber-300 text-[11px]">Tes Diagnostik & Lembar Latihan 1</span>
-              </div>
-            </div>
-            <button
-              id="quick-trial-btn"
-              type="button"
-              onClick={handleQuickTrial}
-              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-[11px] transition-colors cursor-pointer shrink-0 shadow-xs"
-            >
-              Coba Trial
-            </button>
-          </div>
-
           {/* TAB 1: MASUK (LOGIN) */}
           {activeTab === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
@@ -892,10 +757,14 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
 
                 {showHint && (
                   <div className="mt-2.5 p-3 bg-indigo-50/90 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="text-[11px] text-slate-700 dark:text-slate-300">
+                      <strong className="text-indigo-700 dark:text-indigo-300 block mb-0.5">Ketentuan Akses Siswa:</strong>
+                      Akses login siswa hanya dapat menggunakan akun yang sudah didaftarkan dan telah disetujui (Approve) oleh Guru di Panel Admin.
+                    </div>
+                    <div className="flex items-center justify-between pt-1.5 border-t border-indigo-200 dark:border-indigo-800">
                       <div>
-                        <span className="font-semibold">Akun Guru / Admin: </span>
-                        <code className="font-mono text-indigo-700 dark:text-indigo-300 font-bold">admin</code> / <code className="font-mono text-indigo-700 dark:text-indigo-300 font-bold">{ADMIN_PASSWORD}</code>
+                        <span className="font-semibold text-[11px]">Akun Guru / Admin: </span>
+                        <code className="font-mono text-indigo-700 dark:text-indigo-300 font-bold text-xs">admin</code> / <code className="font-mono text-indigo-700 dark:text-indigo-300 font-bold text-xs">{ADMIN_PASSWORD}</code>
                       </div>
                       <button
                         type="button"
@@ -903,13 +772,10 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                           setLoginUsername('admin');
                           setLoginPassword(ADMIN_PASSWORD);
                         }}
-                        className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-bold"
+                        className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold cursor-pointer"
                       >
                         Isi Admin
                       </button>
-                    </div>
-                    <div className="pt-1.5 border-t border-indigo-200 dark:border-indigo-800 text-[11px] text-slate-600 dark:text-slate-400">
-                      Siswa yang baru mendaftar perlu disetujui (Approve) oleh Guru di Panel Admin sebelum dapat masuk.
                     </div>
                   </div>
                 )}
