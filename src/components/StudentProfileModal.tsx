@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   User, 
   Flame, 
@@ -16,17 +16,21 @@ import {
   Printer,
   FileSpreadsheet,
   Zap,
-  Building2
+  Building2,
+  BarChart3
 } from 'lucide-react';
-import { StudentProfile, WorksheetSessionResult, PretestResult } from '../types';
+import { StudentProfile, WorksheetSessionResult, PretestResult, KumonLevelId, LevelProgress } from '../types';
 import { KUMON_LEVELS } from '../data/curriculumData';
 import { PerformanceTrendChart } from './PerformanceTrendChart';
+import { StudentLevelProgressChart } from './StudentLevelProgressChart';
 import { StudentProgressReportModal } from './StudentProgressReportModal';
+import { getStoredLevelProgress } from '../utils/storage';
 
 interface StudentProfileModalProps {
   profile: StudentProfile;
   sessions: WorksheetSessionResult[];
   pretestResult: PretestResult | null;
+  levelProgress?: Record<KumonLevelId, LevelProgress>;
   onLogout?: () => void;
   onClose: () => void;
 }
@@ -35,10 +39,16 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   profile,
   sessions,
   pretestResult,
+  levelProgress,
   onLogout,
   onClose
 }) => {
   const [showReportPDF, setShowReportPDF] = useState(false);
+  const [chartTab, setChartTab] = useState<'level_progress' | 'session_trends'>('level_progress');
+
+  const effectiveLevelProgress = useMemo(() => {
+    return levelProgress || getStoredLevelProgress();
+  }, [levelProgress]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -250,8 +260,56 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
               </div>
             </div>
 
-            {/* Recharts Performance Visualizer */}
-            <PerformanceTrendChart sessions={sessions} />
+            {/* Visualisasi Data Pembelajaran (Recharts) */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <TrendingUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    Visualisasi Progres & Evaluasi Belajar (Recharts)
+                  </h4>
+                </div>
+
+                {/* Sub-tab switcher */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-start sm:self-auto border border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setChartTab('level_progress')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      chartTab === 'level_progress'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>Kemajuan per Level</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setChartTab('session_trends')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      chartTab === 'session_trends'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <span>Tren Skor Sesi</span>
+                  </button>
+                </div>
+              </div>
+
+              {chartTab === 'level_progress' ? (
+                <StudentLevelProgressChart
+                  profile={profile}
+                  levelProgress={effectiveLevelProgress}
+                  sessions={sessions}
+                />
+              ) : (
+                <PerformanceTrendChart sessions={sessions} />
+              )}
+            </div>
 
             {/* Session History List */}
             <div>

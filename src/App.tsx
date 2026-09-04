@@ -31,6 +31,7 @@ import { CertificateModal } from './components/CertificateModal';
 import { TeacherAdminModal } from './components/TeacherAdminModal';
 import { KumonWorksheetPrintModal } from './components/KumonWorksheetPrintModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -274,68 +275,85 @@ export default function App() {
       );
     }
 
-    // Step 2: Active Worksheet Drill Practice
-    if (activeSession) {
-      return (
-        <ErrorBoundary fallbackTitle="Lembar Kerja Sedang Dimuat" onReset={() => setActiveSession(null)}>
-          <WorksheetPracticeScreen
-            levelId={activeSession.levelId}
-            worksheetNum={activeSession.worksheetNum}
-            theme={theme}
-            onToggleTheme={handleToggleTheme}
-            onExit={() => setActiveSession(null)}
-            onFinish={(result, isNewLevelUnlocked, unlockedLevelId) => {
-              setLevelProgress(getStoredLevelProgress());
-              setSessionHistory(getStoredSessionHistory());
-              const updatedProfile = getStoredProfile();
-              if (updatedProfile) setProfile(updatedProfile);
-
-              if (isNewLevelUnlocked && unlockedLevelId) {
-                showToast(`Luar biasa! Level ${unlockedLevelId} telah terbuka!`);
-              }
-              setActiveSession(null);
-            }}
-          />
-        </ErrorBoundary>
-      );
-    }
-
-    // Step 3: Main Level Roadmap & Dashboard
+    // Step 2 & 3: Active Worksheet Drill Practice <-> Level Roadmap Dashboard with Framer Motion slide & fade
     return (
-      <LevelOverviewScreen
-        profile={profile}
-        levelProgress={levelProgress}
-        sessions={sessionHistory}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        onSelectWorksheet={(levelId, worksheetNum) => {
-          if (profile.isTrial && worksheetNum > 1) {
-            showToast('Akun Trial dibatasi hanya untuk Lembar Kerja #1. Silakan masuk menggunakan akun siswa yang telah disetujui Guru untuk akses penuh.');
-            return;
-          }
-          setActiveSession({ levelId, worksheetNum });
-        }}
-        onOpenCertificate={(lvlId) => {
-          setActiveCertificateLevel(lvlId);
-        }}
-        onOpenProfile={() => {
-          setIsProfileModalOpen(true);
-        }}
-        onOpenAdmin={() => {
-          setIsAdminModalOpen(true);
-        }}
-        onOpenPrint={(levelId, worksheetNum) => {
-          setPrintModalState({
-            isOpen: true,
-            levelId: levelId || 'E',
-            worksheetNum: worksheetNum || 1
-          });
-        }}
-        onOpenHome={() => {
-          setShowHomeViewLoggedIn(true);
-        }}
-        onLogout={handleLogout}
-      />
+      <AnimatePresence mode="wait" initial={false}>
+        {activeSession ? (
+          <motion.div
+            key={`worksheet-${activeSession.levelId}-${activeSession.worksheetNum}`}
+            initial={{ opacity: 0, y: 16, filter: 'blur(3px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -16, filter: 'blur(3px)' }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="flex-1 flex flex-col"
+          >
+            <ErrorBoundary fallbackTitle="Lembar Kerja Sedang Dimuat" onReset={() => setActiveSession(null)}>
+              <WorksheetPracticeScreen
+                levelId={activeSession.levelId}
+                worksheetNum={activeSession.worksheetNum}
+                theme={theme}
+                onToggleTheme={handleToggleTheme}
+                onExit={() => setActiveSession(null)}
+                onFinish={(result, isNewLevelUnlocked, unlockedLevelId) => {
+                  setLevelProgress(getStoredLevelProgress());
+                  setSessionHistory(getStoredSessionHistory());
+                  const updatedProfile = getStoredProfile();
+                  if (updatedProfile) setProfile(updatedProfile);
+
+                  if (isNewLevelUnlocked && unlockedLevelId) {
+                    showToast(`Luar biasa! Level ${unlockedLevelId} telah terbuka!`);
+                  }
+                  setActiveSession(null);
+                }}
+              />
+            </ErrorBoundary>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="level-overview-screen"
+            initial={{ opacity: 0, y: -16, filter: 'blur(3px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: 16, filter: 'blur(3px)' }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="flex-1 flex flex-col"
+          >
+            <LevelOverviewScreen
+              profile={profile}
+              levelProgress={levelProgress}
+              sessions={sessionHistory}
+              theme={theme}
+              onToggleTheme={handleToggleTheme}
+              onSelectWorksheet={(levelId, worksheetNum) => {
+                if (profile.isTrial && worksheetNum > 1) {
+                  showToast('Akun Trial dibatasi hanya untuk Lembar Kerja #1. Silakan masuk menggunakan akun siswa yang telah disetujui Guru untuk akses penuh.');
+                  return;
+                }
+                setActiveSession({ levelId, worksheetNum });
+              }}
+              onOpenCertificate={(lvlId) => {
+                setActiveCertificateLevel(lvlId);
+              }}
+              onOpenProfile={() => {
+                setIsProfileModalOpen(true);
+              }}
+              onOpenAdmin={() => {
+                setIsAdminModalOpen(true);
+              }}
+              onOpenPrint={(levelId, worksheetNum) => {
+                setPrintModalState({
+                  isOpen: true,
+                  levelId: levelId || 'E',
+                  worksheetNum: worksheetNum || 1
+                });
+              }}
+              onOpenHome={() => {
+                setShowHomeViewLoggedIn(true);
+              }}
+              onLogout={handleLogout}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     );
   };
 
@@ -345,7 +363,7 @@ export default function App() {
       <NetworkStatusBanner onSyncWithStorage={syncStorageData} />
 
       {/* Main Screen Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-x-hidden">
         {renderCurrentScreen()}
       </div>
 
@@ -363,6 +381,7 @@ export default function App() {
           profile={profile}
           sessions={sessionHistory}
           pretestResult={pretestResult}
+          levelProgress={levelProgress}
           onLogout={handleLogout}
           onClose={() => setIsProfileModalOpen(false)}
         />
