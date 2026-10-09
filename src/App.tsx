@@ -358,7 +358,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F1F5F9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200">
+    <div className="min-h-screen flex flex-col clay-bg-app text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200 selection:bg-indigo-500 selection:text-white">
       {/* Network Connectivity Status Banner (Offline / Back Online) */}
       <NetworkStatusBanner onSyncWithStorage={syncStorageData} />
 
@@ -369,9 +369,9 @@ export default function App() {
 
       {/* Global Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 px-4 py-3 bg-indigo-600 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-xl border border-indigo-400 flex items-center gap-2 animate-slide-up">
-          <span className="w-2 h-2 rounded-full bg-emerald-300 animate-ping" />
-          <span>{toastMessage}</span>
+        <div className="fixed bottom-5 right-5 z-50 px-5 py-3.5 clay-btn-primary text-white font-bold text-xs sm:text-sm rounded-[22px] flex items-center gap-2.5 animate-slide-up">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-ping shadow-sm" />
+          <span className="tracking-wide">{toastMessage}</span>
         </div>
       )}
 

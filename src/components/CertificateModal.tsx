@@ -82,13 +82,13 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-3 sm:p-6 backdrop-blur-sm overflow-y-auto">
-      <div className="flex flex-col w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-3 sm:p-6 backdrop-blur-sm overflow-y-auto">
+      <div className="flex flex-col w-full max-w-2xl clay-card rounded-[32px] overflow-hidden my-auto">
         {/* Modal Toolbar */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-slate-100 border-b border-slate-200 print:hidden">
+        <div className="flex items-center justify-between px-6 py-4 bg-slate-50/80 dark:bg-slate-850/80 border-b border-slate-100/60 dark:border-slate-800/60 print:hidden">
           <div className="flex items-center gap-2">
             <Award className="w-5 h-5 text-amber-500" />
-            <span className="font-bold text-slate-800 text-sm">Sertifikat Kelulusan Level</span>
+            <span className="font-black text-slate-800 dark:text-slate-100 text-sm">Sertifikat Kelulusan Level</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
               type="button"
               id="download-certificate-html-btn"
               onClick={handleDownloadHtml}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 clay-btn-secondary text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
               title="Unduh file dokumen HTML sertifikat"
             >
               <Download className="w-4 h-4 text-emerald-600" />
@@ -107,7 +107,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
               type="button"
               id="print-certificate-pdf-btn"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 clay-btn text-white rounded-xl text-xs font-black transition-all cursor-pointer"
               title="Cetak atau Simpan sebagai PDF"
             >
               <Printer className="w-4 h-4 text-amber-300" />
@@ -117,7 +117,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors"
+              className="p-1.5 rounded-xl clay-btn-secondary text-slate-700 dark:text-slate-300 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

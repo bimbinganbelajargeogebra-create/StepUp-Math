@@ -258,22 +258,22 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-950/85 backdrop-blur-xs overflow-hidden">
       {/* Top Header Controls Bar (Hidden during window.print()) */}
-      <header className="print:hidden bg-slate-900 border-b border-slate-800 text-white px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-lg">
+      <header className="print:hidden clay-nav text-white px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-amber-300 shadow-md shadow-indigo-600/30 font-bold">
+          <div className="w-10 h-10 rounded-2xl clay-btn flex items-center justify-center text-amber-300 font-bold">
             <Printer className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-extrabold text-sm sm:text-base tracking-tight">
+              <h2 className="font-black text-sm sm:text-base tracking-tight text-slate-900 dark:text-white">
                 Pusat Unduh &amp; Cetak Lembar Kerja Mandiri
               </h2>
-              <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                <FileText className="w-3 h-3 text-amber-300" />
+              <span className="px-2.5 py-0.5 clay-badge text-indigo-600 dark:text-indigo-400 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <FileText className="w-3 h-3 text-amber-500" />
                 Format Standar A4
               </span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               Pilih format unduh: Soal Latihan Siswa, Kunci Jawaban Singkat, atau Pembahasan Lengkap Rinci.
             </p>
           </div>
@@ -285,10 +285,10 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
             type="button"
             id="download-html-worksheets-btn"
             onClick={handleDownloadHtml}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs sm:text-sm rounded-xl border border-slate-700 shadow-sm flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            className="px-3.5 py-2 clay-btn-secondary text-slate-800 dark:text-slate-200 font-bold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
             title="Unduh file dokumen HTML lengkap yang dapat dibuka dan dicetak secara offline kapan saja"
           >
-            <Download className="w-4 h-4 text-emerald-400" />
+            <Download className="w-4 h-4 text-emerald-500" />
             <span>Unduh Dokumen (.html)</span>
           </button>
 
@@ -296,7 +296,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
             type="button"
             id="print-pdf-worksheets-btn"
             onClick={handlePrint}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer active:scale-95"
+            className="px-4 py-2 clay-btn text-white font-black text-xs sm:text-sm rounded-xl flex items-center gap-2 transition-all cursor-pointer"
             title="Buka dialog cetak browser (Pilih 'Save as PDF' untuk menyimpan file PDF berkualitas tinggi)"
           >
             <Printer className="w-4 h-4 text-amber-300" />
@@ -306,7 +306,7 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="p-2 rounded-xl clay-btn-secondary text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
             title="Tutup"
           >
             <X className="w-5 h-5" />

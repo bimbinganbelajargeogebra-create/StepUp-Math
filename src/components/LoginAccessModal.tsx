@@ -485,17 +485,21 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F1F5F9] dark:bg-slate-950 p-4 sm:p-6 font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-200">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors duration-200">
+    <div className="min-h-screen flex items-center justify-center clay-bg-app p-4 sm:p-6 font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-200 relative overflow-x-hidden">
+      {/* Decorative ambient clay spheres */}
+      <div className="clay-orb w-64 h-64 -top-20 -right-20 bg-indigo-300/30 dark:bg-indigo-900/10 pointer-events-none" />
+      <div className="clay-orb w-60 h-60 -bottom-20 -left-20 bg-pink-300/30 dark:bg-pink-900/10 pointer-events-none" />
+
+      <div className="w-full max-w-md clay-card rounded-[32px] overflow-hidden transition-colors duration-200 z-10">
         
         {/* Top brand header */}
-        <div className="bg-slate-900 p-6 text-white text-center border-b border-slate-800 relative">
+        <div className="bg-slate-900/90 dark:bg-slate-950/90 p-6 text-white text-center border-b border-slate-800/80 relative">
           {onBackToHome && (
             <button
               id="login-back-to-home"
               type="button"
               onClick={onBackToHome}
-              className="absolute top-4 left-4 p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+              className="absolute top-4 left-4 p-2 rounded-xl clay-btn-secondary text-xs cursor-pointer flex items-center gap-1.5"
               title="Kembali ke Halaman Beranda"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -508,7 +512,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
               id="login-theme-toggle"
               type="button"
               onClick={onToggleTheme}
-              className="absolute top-4 right-4 p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs transition-colors cursor-pointer"
+              className="absolute top-4 right-4 p-2 rounded-xl clay-btn-secondary text-xs cursor-pointer"
               title={theme === 'dark' ? 'Tema Terang' : 'Tema Gelap'}
             >
               {theme === 'dark' ? (
@@ -522,19 +526,19 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
           <div className="flex justify-center mb-2.5">
             <MathLogo size="xl" glow />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-white">AlgoriMath</h1>
-          <p className="text-slate-400 text-xs mt-0.5">
+          <h1 className="text-2xl font-black tracking-tight text-white">AlgoriMath</h1>
+          <p className="text-slate-300 dark:text-slate-400 text-xs mt-0.5 font-medium">
             Belajar Mandiri Matematika Berjenjang (Level 6A – M)
           </p>
 
-          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/90 rounded-full text-[11px] text-indigo-200 border border-indigo-900/50">
+          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/90 rounded-full text-[11px] text-indigo-200 border border-indigo-700/50">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Database: Sinkronisasi Database Aktif</span>
+            <span className="font-bold">Sinkronisasi Database Aktif</span>
           </div>
         </div>
 
         {/* Tab Selection: Masuk vs Daftar Akun vs Status Akun */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-1.5 gap-1 overflow-x-auto">
+        <div className="flex border-b border-slate-100/60 dark:border-slate-800/60 clay-inset p-2 gap-1.5 overflow-x-auto m-4 rounded-2xl">
           <button
             id="tab-login-btn"
             type="button"
@@ -542,9 +546,9 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
               setActiveTab('login');
               setError('');
             }}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'login'
-                ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/80 dark:border-slate-700'
+                ? 'clay-btn text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -559,9 +563,9 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
               setActiveTab('register');
               setError('');
             }}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'register'
-                ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/80 dark:border-slate-700'
+                ? 'clay-btn text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -579,9 +583,9 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                 handleLookupStatus(loginUsername);
               }
             }}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'status'
-                ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/80 dark:border-slate-700'
+                ? 'clay-btn text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -591,7 +595,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         </div>
 
         {/* Form Container */}
-        <div className="p-6 space-y-4">
+        <div className="px-6 pb-6 pt-2 space-y-4">
 
           {/* Success Notice Banner */}
           {successNotice && (
@@ -641,7 +645,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                   type="button"
                   onClick={handleCheckPendingStatus}
                   disabled={isCheckingStatus}
-                  className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  className="px-3.5 py-2 clay-btn-amber text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isCheckingStatus ? 'animate-spin' : ''}`} />
                   <span>{isCheckingStatus ? 'Memeriksa...' : 'Cek Status Sekarang'}</span>
@@ -653,7 +657,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                     setPendingAccount(null);
                     setError('');
                   }}
-                  className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl hover:bg-slate-50 transition-colors"
+                  className="px-3 py-2 clay-btn-secondary text-xs font-bold rounded-xl cursor-pointer"
                 >
                   Tutup
                 </button>
@@ -692,7 +696,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                     setRejectedAccount(null);
                     setError('');
                   }}
-                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  className="px-3.5 py-2 clay-btn text-white text-xs font-bold rounded-xl cursor-pointer"
                 >
                   Daftar Ulang dengan Data Benar
                 </button>
@@ -705,7 +709,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Username Input */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                   Username / Nama Akun
                 </label>
@@ -716,21 +720,21 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
                   placeholder="Contoh: rian123 atau admin"
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm font-medium transition-all"
+                  className="w-full px-4 py-2.5 clay-input rounded-2xl text-slate-800 dark:text-slate-100 text-sm font-bold focus:outline-none focus:ring-3 focus:ring-indigo-400/40 transition-all"
                 />
               </div>
 
               {/* Password Input */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                  <label className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                     <KeyRound className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     Password
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowHint(!showHint)}
-                    className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-medium cursor-pointer"
+                    className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold cursor-pointer"
                   >
                     {showHint ? 'Tutup Info' : 'Bantuan Akses'}
                   </button>
@@ -744,7 +748,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Masukkan password akun Anda..."
-                    className="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm font-mono tracking-wider transition-all"
+                    className="w-full pl-4 pr-10 py-2.5 clay-input rounded-2xl text-slate-800 dark:text-slate-100 text-sm font-mono font-bold tracking-wider focus:outline-none focus:ring-3 focus:ring-indigo-400/40 transition-all"
                   />
                   <button
                     type="button"
@@ -756,12 +760,12 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                 </div>
 
                 {showHint && (
-                  <div className="mt-2.5 p-3 bg-indigo-50/90 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 space-y-2">
+                  <div className="mt-2.5 p-3 clay-card-sm rounded-2xl text-xs text-indigo-900 dark:text-indigo-200 space-y-2">
                     <div className="text-[11px] text-slate-700 dark:text-slate-300">
-                      <strong className="text-indigo-700 dark:text-indigo-300 block mb-0.5">Ketentuan Akses Siswa:</strong>
+                      <strong className="text-indigo-700 dark:text-indigo-300 block mb-0.5 font-bold">Ketentuan Akses Siswa:</strong>
                       Akses login siswa hanya dapat menggunakan akun yang sudah didaftarkan dan telah disetujui (Approve) oleh Guru di Panel Admin.
                     </div>
-                    <div className="flex items-center justify-between pt-1.5 border-t border-indigo-200 dark:border-indigo-800">
+                    <div className="flex items-center justify-between pt-1.5 border-t border-slate-200 dark:border-slate-800">
                       <div>
                         <span className="font-semibold text-[11px]">Akun Guru / Admin: </span>
                         <code className="font-mono text-indigo-700 dark:text-indigo-300 font-bold text-xs">admin</code> / <code className="font-mono text-indigo-700 dark:text-indigo-300 font-bold text-xs">{ADMIN_PASSWORD}</code>
@@ -772,7 +776,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                           setLoginUsername('admin');
                           setLoginPassword(ADMIN_PASSWORD);
                         }}
-                        className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold cursor-pointer"
+                        className="px-2.5 py-1 clay-btn text-white rounded-xl text-[10px] font-bold cursor-pointer"
                       >
                         Isi Admin
                       </button>
@@ -786,7 +790,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                 id="login-submit-btn"
                 type="submit"
                 disabled={isSubmittingLogin}
-                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none active:scale-[0.99] transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-75"
+                className="w-full py-3.5 px-4 clay-btn text-white font-black rounded-2xl transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-75"
               >
                 {isSubmittingLogin ? (
                   <>
@@ -808,7 +812,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
             <form onSubmit={handleRegister} className="space-y-3.5">
               {/* Full Name */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                   Nama Lengkap Siswa
                 </label>
@@ -819,14 +823,14 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
                   placeholder="Contoh: Rian Pratama"
-                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                  className="w-full px-3.5 py-2 clay-input rounded-2xl text-slate-800 dark:text-slate-100 text-sm font-bold focus:outline-none focus:ring-3 focus:ring-indigo-400/40"
                 />
               </div>
 
               {/* Username & Avatar in Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     Username Akun
                   </label>
@@ -837,23 +841,23 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                     value={regUsername}
                     onChange={(e) => setRegUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                     placeholder="Contoh: rian_math"
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono"
+                    className="w-full px-3.5 py-2 clay-input rounded-2xl text-slate-800 dark:text-slate-100 text-sm font-mono font-bold focus:outline-none focus:ring-3 focus:ring-indigo-400/40"
                   />
-                  <span className="text-[10px] text-slate-400 block mt-0.5">Huruf kecil, angka, garis bawah</span>
+                  <span className="text-[10px] text-slate-400 font-medium block mt-0.5">Huruf kecil, angka, garis bawah</span>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
                     Pilih Avatar
                   </label>
-                  <div className="flex items-center justify-between gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center justify-between gap-1 clay-inset p-1.5 rounded-2xl">
                     {AVATARS.slice(0, 5).map((av) => (
                       <button
                         key={av}
                         type="button"
                         onClick={() => setRegAvatar(av)}
-                        className={`w-7 h-7 flex items-center justify-center rounded-lg text-sm transition-all cursor-pointer ${
-                          regAvatar === av ? 'bg-indigo-600 text-white shadow-xs scale-110' : 'hover:bg-slate-200 dark:hover:bg-slate-700'
+                        className={`w-7 h-7 flex items-center justify-center rounded-xl text-sm transition-all cursor-pointer ${
+                          regAvatar === av ? 'clay-btn text-white scale-110' : 'hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >
                         {av}
@@ -866,7 +870,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
               {/* Grade & School */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
                     <GraduationCap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     Jenjang / Kelas
                   </label>
@@ -874,7 +878,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                     id="reg-grade-select"
                     value={regGrade}
                     onChange={(e) => setRegGrade(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-medium"
+                    className="w-full px-3 py-2.5 clay-input rounded-2xl text-slate-800 dark:text-slate-100 text-xs font-bold focus:outline-none focus:ring-3 focus:ring-indigo-400/40"
                   >
                     <option value="TK / Pra-Sekolah">TK / Pra-Sekolah</option>
                     <option value="SD Kelas 1">SD Kelas 1</option>
@@ -889,7 +893,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
                     <Building2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     Asal Sekolah
                   </label>
@@ -899,7 +903,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                     value={regSchool}
                     onChange={(e) => setRegSchool(e.target.value)}
                     placeholder="Contoh: SDN 01 Harapan"
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                    className="w-full px-3.5 py-2 clay-input rounded-2xl text-slate-800 dark:text-slate-100 text-xs font-bold focus:outline-none focus:ring-3 focus:ring-indigo-400/40"
                   />
                 </div>
               </div>
@@ -907,7 +911,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
               {/* Password & Confirm Password */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     Password
                   </label>
@@ -918,12 +922,12 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="Min. 4 karakter"
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-mono"
+                    className="w-full px-3.5 py-2 clay-input rounded-2xl text-slate-800 dark:text-slate-100 text-xs font-mono font-bold focus:outline-none focus:ring-3 focus:ring-indigo-400/40"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     Ulangi Password
                   </label>
@@ -934,12 +938,12 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                     value={regConfirmPassword}
                     onChange={(e) => setRegConfirmPassword(e.target.value)}
                     placeholder="Ulangi password"
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-mono"
+                    className="w-full px-3.5 py-2 clay-input rounded-2xl text-slate-800 dark:text-slate-100 text-xs font-mono font-bold focus:outline-none focus:ring-3 focus:ring-indigo-400/40"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-500">
+              <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="checkbox"
@@ -956,7 +960,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                 id="register-submit-btn"
                 type="submit"
                 disabled={isSubmittingReg}
-                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-none active:scale-[0.99] transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-75"
+                className="w-full py-3.5 px-4 clay-btn-emerald text-white font-black rounded-2xl transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-75"
               >
                 {isSubmittingReg ? (
                   <>
@@ -976,20 +980,20 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
           {/* TAB 3: STATUS AKUN SISWA */}
           {activeTab === 'status' && (
             <div className="space-y-4">
-              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/70 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="p-4 clay-inset rounded-2xl space-y-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
                     <Search className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     Cek Status Pendaftaran Akun Siswa
                   </label>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 font-medium">
                     Ketik username yang Anda daftarkan untuk melihat status persetujuan guru dan detail akun.
                   </p>
                 </div>
 
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">@</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs font-bold">@</span>
                     <input
                       id="status-lookup-input"
                       type="text"
@@ -1005,7 +1009,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                         }
                       }}
                       placeholder="Masukkan username akun..."
-                      className="w-full pl-7 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs sm:text-sm font-mono"
+                      className="w-full pl-7 pr-3 py-2.5 clay-input rounded-2xl text-slate-800 dark:text-slate-100 text-xs sm:text-sm font-mono font-bold focus:outline-none focus:ring-3 focus:ring-indigo-400/40"
                     />
                   </div>
 
@@ -1014,7 +1018,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                     type="button"
                     disabled={isSearchingStatus}
                     onClick={() => handleLookupStatus()}
-                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50 shrink-0"
+                    className="px-4 py-2.5 clay-btn text-white font-black rounded-2xl text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shrink-0"
                   >
                     {isSearchingStatus ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -1026,7 +1030,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                 </div>
 
                 {statusLookupError && (
-                  <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+                  <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     <span>{statusLookupError}</span>
                   </div>
@@ -1035,7 +1039,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
 
               {/* Status Lookup Result Card */}
               {statusLookupResult && (
-                <div className={`p-4 rounded-2xl border transition-all space-y-4 ${
+                <div className={`p-4 rounded-3xl border transition-all space-y-4 ${
                   statusLookupResult.status === 'approved'
                     ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800'
                     : statusLookupResult.status === 'pending'
@@ -1045,14 +1049,14 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                   {/* Result Header */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center text-2xl shrink-0">
+                      <div className="w-12 h-12 rounded-2xl clay-card-sm flex items-center justify-center text-2xl shrink-0">
                         {statusLookupResult.avatar || '🦊'}
                       </div>
                       <div>
-                        <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                        <h4 className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
                           {statusLookupResult.name}
                         </h4>
-                        <p className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                        <p className="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400">
                           @{statusLookupResult.username}
                         </p>
                       </div>
@@ -1061,19 +1065,19 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                     {/* Status Badge */}
                     <div>
                       {statusLookupResult.status === 'approved' && (
-                        <span className="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xs">
+                        <span className="px-3.5 py-1 clay-btn-emerald text-white text-xs font-black rounded-full flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Disetujui & Aktif</span>
                         </span>
                       )}
                       {statusLookupResult.status === 'pending' && (
-                        <span className="px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xs animate-pulse">
+                        <span className="px-3.5 py-1 clay-btn-amber text-slate-950 text-xs font-black rounded-full flex items-center gap-1.5 animate-pulse">
                           <Clock className="w-3.5 h-3.5" />
                           <span>Menunggu Approval</span>
                         </span>
                       )}
                       {statusLookupResult.status === 'rejected' && (
-                        <span className="px-3 py-1 bg-rose-600 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xs">
+                        <span className="px-3.5 py-1 clay-btn-rose text-white text-xs font-black rounded-full flex items-center gap-1.5">
                           <XCircle className="w-3.5 h-3.5" />
                           <span>Pendaftaran Ditolak</span>
                         </span>
@@ -1082,12 +1086,12 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                   </div>
 
                   {/* Status Explanation Box */}
-                  <div className="p-3 bg-white/90 dark:bg-slate-900/90 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs space-y-1.5">
+                  <div className="p-3.5 clay-inset rounded-2xl text-xs space-y-1.5">
                     {statusLookupResult.status === 'approved' && (
                       <div className="text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                         <div>
-                          <strong className="block">Akun telah disetujui dan aktif!</strong>
+                          <strong className="block font-black">Akun telah disetujui dan aktif!</strong>
                           <span>
                             {statusLookupResult.reviewedBy 
                               ? `Disetujui oleh ${statusLookupResult.reviewedBy}. Anda dapat langsung login.` 
@@ -1101,7 +1105,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                       <div className="text-amber-800 dark:text-amber-300 flex items-start gap-2">
                         <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                         <div>
-                          <strong className="block">Menunggu Persetujuan Guru / Pengajar</strong>
+                          <strong className="block font-black">Menunggu Persetujuan Guru / Pengajar</strong>
                           <span>
                             Pendaftaran Anda sudah tersimpan di database. Hubungi guru atau pengajar bimbingan belajar untuk melakukan approval di Panel Admin.
                           </span>
@@ -1113,7 +1117,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                       <div className="text-rose-800 dark:text-rose-300 flex items-start gap-2">
                         <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                         <div>
-                          <strong className="block">Pendaftaran Akun Ditolak</strong>
+                          <strong className="block font-black">Pendaftaran Akun Ditolak</strong>
                           <span>
                             Catatan Guru: "{statusLookupResult.rejectionReason || 'Data pendaftaran belum terverifikasi.'}"
                           </span>
@@ -1124,26 +1128,26 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
 
                   {/* Account Metadata Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <div className="p-2.5 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div className="p-2.5 clay-card-sm rounded-2xl">
                       <span className="text-[10px] text-slate-500 block uppercase font-bold">Jenjang / Kelas</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">{statusLookupResult.grade || '-'}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{statusLookupResult.grade || '-'}</span>
                     </div>
 
-                    <div className="p-2.5 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div className="p-2.5 clay-card-sm rounded-2xl">
                       <span className="text-[10px] text-slate-500 block uppercase font-bold">Asal Sekolah</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">{statusLookupResult.school || '-'}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">{statusLookupResult.school || '-'}</span>
                     </div>
 
-                    <div className="p-2.5 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div className="p-2.5 clay-card-sm rounded-2xl">
                       <span className="text-[10px] text-slate-500 block uppercase font-bold">Level Awal</span>
-                      <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                      <span className="font-black text-indigo-600 dark:text-indigo-400">
                         {statusLookupResult.startingLevel || statusLookupResult.currentLevel || 'Level 6A'}
                       </span>
                     </div>
 
-                    <div className="p-2.5 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div className="p-2.5 clay-card-sm rounded-2xl">
                       <span className="text-[10px] text-slate-500 block uppercase font-bold">Waktu Pendaftaran</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
                         {new Date(statusLookupResult.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                       </span>
                     </div>
@@ -1158,7 +1162,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                           setLoginUsername(statusLookupResult.username);
                           setActiveTab('login');
                         }}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                        className="px-4 py-2.5 clay-btn-emerald text-white font-black rounded-2xl text-xs flex items-center gap-1.5 transition-all cursor-pointer"
                       >
                         <LogIn className="w-3.5 h-3.5" />
                         <span>Lanjut ke Form Login</span>
@@ -1170,7 +1174,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                         type="button"
                         onClick={() => handleLookupStatus(statusLookupResult.username)}
                         disabled={isSearchingStatus}
-                        className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                        className="px-3.5 py-2.5 clay-btn-amber text-xs font-black rounded-2xl flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                       >
                         <RefreshCw className={`w-3.5 h-3.5 ${isSearchingStatus ? 'animate-spin' : ''}`} />
                         <span>Periksa Ulang Status</span>
@@ -1187,7 +1191,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                           setRegSchool(statusLookupResult.school || '');
                           setActiveTab('register');
                         }}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                        className="px-4 py-2.5 clay-btn text-white font-black rounded-2xl text-xs flex items-center gap-1.5 transition-all cursor-pointer"
                       >
                         <UserPlus className="w-3.5 h-3.5" />
                         <span>Daftar Ulang dengan Data Baru</span>

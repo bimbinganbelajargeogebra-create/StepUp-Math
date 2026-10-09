@@ -28,33 +28,33 @@ export const BadgeUnlockModal: React.FC<BadgeUnlockModalProps> = ({
   if (!unlockedBadges || unlockedBadges.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-70 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
         id="badge-unlock-popup-card"
-        className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 shadow-2xl border border-amber-300 dark:border-amber-700/80 text-center space-y-5 relative overflow-hidden"
+        className="w-full max-w-md clay-card rounded-[32px] p-6 sm:p-7 text-center space-y-5 relative overflow-hidden"
       >
-        {/* Glow background accent */}
-        <div className="absolute -top-20 -left-20 w-40 h-40 bg-amber-400/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        {/* Glow ambient clay accent */}
+        <div className="clay-orb w-48 h-48 -top-16 -left-16 bg-amber-400/25 pointer-events-none" />
+        <div className="clay-orb w-48 h-48 -bottom-16 -right-16 bg-indigo-500/25 pointer-events-none" />
 
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-2 rounded-xl clay-btn-secondary text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Milestone Badge Icon & Header */}
         <div className="space-y-2">
-          <div className="w-20 h-20 bg-gradient-to-tr from-amber-400 to-amber-200 dark:from-amber-500 dark:to-yellow-300 rounded-3xl flex items-center justify-center text-4xl shadow-xl shadow-amber-500/30 mx-auto border-2 border-white dark:border-slate-800 animate-bounce">
+          <div className="w-20 h-20 clay-btn-amber rounded-3xl flex items-center justify-center text-4xl shadow-xl mx-auto animate-bounce">
             {unlockedBadges[0].icon}
           </div>
 
-          <div className="flex items-center justify-center gap-1 text-amber-600 dark:text-amber-400 font-extrabold text-xs tracking-widest uppercase">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="flex items-center justify-center gap-1 text-amber-600 dark:text-amber-400 font-black text-xs tracking-widest uppercase">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>Lencana Baru Terbuka!</span>
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -69,7 +69,7 @@ export const BadgeUnlockModal: React.FC<BadgeUnlockModalProps> = ({
             return (
               <div 
                 key={badge.id}
-                className={`p-4 rounded-2xl border text-left flex items-start gap-3.5 ${tierTheme.bg} ${tierTheme.border}`}
+                className={`p-4 rounded-2xl text-left flex items-start gap-3.5 clay-card-sm ${tierTheme.border}`}
               >
                 <div className="text-3xl shrink-0 p-1">
                   {badge.icon}
@@ -79,11 +79,11 @@ export const BadgeUnlockModal: React.FC<BadgeUnlockModalProps> = ({
                     <h3 className="text-sm font-black text-slate-900 dark:text-white">
                       {badge.title}
                     </h3>
-                    <span className={`text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-white/80 dark:bg-slate-900/80 ${tierTheme.text}`}>
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${tierTheme.bg} ${tierTheme.text}`}>
                       {badge.tier}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-snug">
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-snug font-medium">
                     {badge.description}
                   </p>
                 </div>
@@ -97,7 +97,7 @@ export const BadgeUnlockModal: React.FC<BadgeUnlockModalProps> = ({
           type="button"
           id="claim-badge-reward-btn"
           onClick={onClose}
-          className="w-full py-3.5 bg-gradient-to-r from-amber-500 via-indigo-600 to-indigo-700 hover:from-amber-600 hover:to-indigo-800 text-white font-black rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm transition-all cursor-pointer active:scale-95"
+          className="w-full py-4 clay-btn text-white font-black rounded-2xl flex items-center justify-center gap-2 text-sm transition-all cursor-pointer"
         >
           <span>Klaim &amp; Terus Belajar</span>
           <ChevronRight className="w-4 h-4" />

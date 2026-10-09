@@ -308,15 +308,18 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
   // Completion summary screen with Comprehensive Solutions Review & Download
   if (isCompleted && finalResult) {
     return (
-      <div className="min-h-screen bg-[#F1F5F9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex items-center justify-center p-3 sm:p-6 font-sans transition-colors duration-200 py-10">
-        <div className="w-full max-w-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-200 dark:border-slate-800">
+      <div className="min-h-screen clay-bg-app text-slate-800 dark:text-slate-100 flex items-center justify-center p-3 sm:p-6 font-sans transition-colors duration-200 py-10 relative overflow-x-hidden">
+        <div className="clay-orb w-64 h-64 -top-16 -left-16 bg-indigo-300/25 dark:bg-indigo-700/15" />
+        <div className="clay-orb w-72 h-72 top-1/2 -right-24 bg-amber-200/30 dark:bg-amber-600/10" />
+
+        <div className="w-full max-w-3xl clay-card overflow-hidden my-auto">
           {/* Top banner */}
-          <div className="bg-slate-900 p-6 text-white text-center border-b border-slate-800">
-            <div className="w-14 h-14 bg-indigo-600 rounded-2xl mx-auto mb-2 flex items-center justify-center shadow-lg shadow-indigo-600/30 text-white font-bold text-2xl">
-              <Award className="w-8 h-8 text-amber-300" />
+          <div className="bg-slate-900/90 dark:bg-slate-950/90 p-7 text-white text-center border-b border-white/10">
+            <div className="w-16 h-16 clay-btn-primary rounded-2xl mx-auto mb-3 flex items-center justify-center text-white font-bold text-2xl">
+              <Award className="w-9 h-9 text-amber-300" />
             </div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-white">Lembar Kerja Selesai!</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Lembar Kerja Selesai!</h2>
+            <p className="text-xs text-slate-300 mt-1">
               Level {levelId} • Lembar Kerja #{worksheetNum} • {levelInfo.name}
             </p>
           </div>
@@ -324,19 +327,19 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
           <div className="p-6 sm:p-8 space-y-6">
             {/* Score & Time cards */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 rounded-xl text-center">
+              <div className="p-5 clay-card-sm text-center">
                 <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Skor Akurasi</span>
                 <div className="text-3xl sm:text-4xl font-mono font-black text-indigo-700 dark:text-indigo-400 my-1">
                   {finalResult.score}
                 </div>
-                <span className={`text-xs font-bold ${finalResult.score === 100 ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                <span className={`clay-badge px-2.5 py-0.5 text-xs font-bold ${finalResult.score === 100 ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                   {finalResult.correctCount} dari {finalResult.totalQuestions} Benar
                 </span>
               </div>
 
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-center">
+              <div className="p-5 clay-card-sm text-center">
                 <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Waktu Pengerjaan</span>
-                <div className="text-2xl sm:text-3xl font-mono font-bold text-slate-800 dark:text-slate-100 my-1">
+                <div className="text-2xl sm:text-3xl font-mono font-black text-slate-800 dark:text-slate-100 my-1">
                   {formatTime(finalResult.timeSpentSeconds)}
                 </div>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
@@ -347,13 +350,13 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
             {/* Unlock Notification if new level unlocked */}
             {unlockInfo.isNewLevelUnlocked && unlockInfo.unlockedLevelId && (
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+              <div className="p-4 sm:p-5 clay-card-sm bg-emerald-50/90 dark:bg-emerald-950/60 border-emerald-300/40 flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl clay-btn-emerald text-white flex items-center justify-center font-bold text-lg shrink-0">
                   ★
                 </div>
                 <div>
-                  <h4 className="font-bold text-emerald-900 dark:text-emerald-200 text-sm">Selamat! Level Baru Terbuka!</h4>
-                  <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                  <h4 className="font-extrabold text-emerald-900 dark:text-emerald-200 text-sm">Selamat! Level Baru Terbuka!</h4>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
                     Anda telah menguasai Level {levelId} dan membuka <strong>Level {unlockInfo.unlockedLevelId}</strong>.
                   </p>
                 </div>
@@ -361,12 +364,12 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
             )}
 
             {/* Mastery evaluation notice */}
-            <div className={`p-4 rounded-xl text-xs sm:text-sm ${
+            <div className={`p-4 sm:p-5 clay-card-sm text-xs sm:text-sm ${
               finalResult.isMastered
-                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800'
-                : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800'
+                ? 'bg-emerald-50/90 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 border-emerald-300/40'
+                : 'bg-amber-50/90 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 border-amber-300/40'
             }`}>
-              <div className="font-bold flex items-center gap-1.5 mb-1">
+              <div className="font-extrabold flex items-center gap-2 mb-1.5 text-sm">
                 {finalResult.isMastered ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
                 {finalResult.isMastered ? 'Lulus Standar Ketuntasan (SCT)!' : 'Pengulangan Latihan Disarankan'}
               </div>
@@ -680,25 +683,33 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
   }, []);
 
   return (
-    <div className={`min-h-screen ${isFocusMode ? 'bg-slate-900 dark:bg-slate-950' : 'bg-[#F1F5F9] dark:bg-slate-950'} text-slate-800 dark:text-slate-100 flex flex-col justify-between font-sans selection:bg-indigo-600 selection:text-white transition-colors duration-300`}>
+    <div className={`min-h-screen ${isFocusMode ? 'bg-slate-900 dark:bg-slate-950' : 'clay-bg-app'} text-slate-800 dark:text-slate-100 flex flex-col justify-between font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-300 relative overflow-x-hidden`}>
+      {/* Decorative ambient clay spheres (when not in focus mode) */}
+      {!isFocusMode && (
+        <>
+          <div className="clay-orb w-64 h-64 -top-20 -right-20 bg-indigo-300/30 dark:bg-indigo-900/10 pointer-events-none" />
+          <div className="clay-orb w-56 h-56 top-1/2 -left-20 bg-amber-200/30 dark:bg-amber-900/10 pointer-events-none" />
+        </>
+      )}
+
       {/* Header Bar */}
-      <header className={`${isFocusMode ? 'h-14 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6' : 'h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8'} flex items-center justify-between shadow-xs transition-all duration-300 z-10`}>
+      <header className={`${isFocusMode ? 'h-14 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6' : 'clay-nav px-4 sm:px-8'} flex items-center justify-between transition-all duration-300 z-10 sticky top-0`}>
         <div className="flex items-center gap-3 sm:gap-6">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <button
               type="button"
               id="practice-exit-btn"
               onClick={onExit}
-              className={`px-3 py-1.5 ${isFocusMode ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'} text-xs font-bold rounded-lg transition-colors cursor-pointer`}
+              className={`px-3.5 py-1.5 ${isFocusMode ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-300' : 'clay-btn-secondary'} text-xs font-bold rounded-xl cursor-pointer`}
             >
               Keluar
             </button>
             
             <div className="flex flex-col">
               {!isFocusMode && (
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Set Latihan</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-400 font-extrabold uppercase tracking-widest">Set Latihan</span>
               )}
-              <span className={`text-xs sm:text-sm font-bold ${isFocusMode ? 'text-indigo-400' : 'text-slate-800 dark:text-slate-100'}`}>
+              <span className={`text-xs sm:text-sm font-black ${isFocusMode ? 'text-indigo-400' : 'text-slate-800 dark:text-slate-100'}`}>
                 Level {levelId} • Lembar #{worksheetNum} {!isFocusMode && `(${levelInfo.name})`}
               </span>
             </div>
@@ -706,11 +717,11 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
           {!isFocusMode && (
             <>
-              <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 hidden md:block"></div>
+              <div className="h-7 w-[1.5px] bg-slate-200 dark:bg-slate-800 hidden md:block"></div>
 
               <div className="hidden md:flex flex-col">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Status Akses</span>
-                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">ALGORIMATH-VERIFIED</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-400 font-extrabold uppercase tracking-widest">Status Akses</span>
+                <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 font-mono">ALGORIMATH-VERIFIED</span>
               </div>
             </>
           )}
@@ -725,7 +736,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
               setPrintModalMode('questions_only');
               setIsPrintModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold clay-btn-secondary cursor-pointer"
             title="Cetak atau Unduh Lembar Kerja Ini (PDF / Dokumen)"
           >
             <Printer className="w-3.5 h-3.5 text-indigo-500" />
@@ -737,10 +748,10 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
             id="focus-mode-toggle-btn"
             type="button"
             onClick={() => setIsFocusMode(!isFocusMode)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               isFocusMode
-                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 ring-2 ring-amber-400/50 shadow-amber-500/20'
-                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                ? 'clay-btn-amber shadow-amber-500/20'
+                : 'clay-btn-secondary'
             }`}
             title="Mode Fokus: Sembunyikan elemen pengganggu untuk konsentrasi penuh (Tekan 'F')"
           >
@@ -754,7 +765,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
               id="practice-theme-toggle"
               type="button"
               onClick={onToggleTheme}
-              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+              className="p-2 rounded-xl clay-btn-secondary text-xs font-bold cursor-pointer"
               title={theme === 'dark' ? 'Tema Terang' : 'Tema Gelap'}
             >
               {theme === 'dark' ? (
@@ -766,11 +777,11 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
           )}
 
           {/* Timer Display */}
-          <div className={`text-right ${isFocusMode ? 'px-2 py-1 bg-slate-900 rounded-lg border border-slate-800' : ''}`}>
+          <div className={`text-right ${isFocusMode ? 'px-2 py-1 bg-slate-900 rounded-xl border border-slate-800' : 'clay-inset px-3 py-1 rounded-xl'}`}>
             {!isFocusMode && (
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Waktu Berjalan</p>
+              <p className="text-[9px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Waktu</p>
             )}
-            <p className={`font-mono font-bold ${isFocusMode ? 'text-xs sm:text-sm text-emerald-400 flex items-center gap-1' : 'text-base sm:text-lg text-slate-800 dark:text-slate-100'}`}>
+            <p className={`font-mono font-black ${isFocusMode ? 'text-xs sm:text-sm text-emerald-400 flex items-center gap-1' : 'text-sm sm:text-base text-slate-800 dark:text-slate-100'}`}>
               {isFocusMode && <Clock className="w-3 h-3 text-emerald-400" />}
               {formatTime(secondsElapsed)}
             </p>
@@ -781,14 +792,14 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
             type="button"
             id="practice-scratchpad-btn"
             onClick={() => setIsScratchpadOpen(true)}
-            className={`flex items-center gap-1 px-3 py-2 ${
+            className={`flex items-center gap-1.5 px-3 py-2 ${
               isFocusMode
                 ? 'bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700'
-                : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
-            } font-bold rounded-lg text-xs transition-colors cursor-pointer shadow-xs`}
+                : 'clay-btn-secondary text-indigo-600 dark:text-indigo-300'
+            } font-bold rounded-xl text-xs cursor-pointer`}
             title="Buka Papan Coretan / Scratchpad"
           >
-            <PenTool className="w-3.5 h-3.5" />
+            <PenTool className="w-3.5 h-3.5 text-indigo-500" />
             <span className="hidden sm:inline">Coretan</span>
           </button>
         </div>
@@ -796,10 +807,10 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
       {/* Main Worksheet Card */}
       <main className={`flex-1 p-3 sm:p-6 lg:p-8 flex items-center justify-center transition-all duration-300 ${isFocusMode ? 'max-w-4xl mx-auto w-full' : ''}`}>
-        <div className={`w-full max-w-2xl bg-white dark:bg-slate-900 shadow-xl ${isFocusMode ? 'shadow-2xl shadow-indigo-950/50 border-2 border-indigo-500/30 ring-4 ring-indigo-500/10' : 'shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800'} rounded-2xl flex flex-col overflow-hidden transition-all duration-200`}>
+        <div className={`w-full max-w-2xl ${isFocusMode ? 'bg-slate-900 shadow-2xl border-2 border-indigo-500/30 ring-4 ring-indigo-500/10' : 'clay-card'} rounded-[32px] flex flex-col overflow-hidden transition-all duration-200`}>
           {/* Focus Mode Zen Banner */}
           {isFocusMode && (
-            <div className="bg-indigo-950/60 border-b border-indigo-800/40 px-5 py-2 flex items-center justify-between text-xs text-indigo-300">
+            <div className="bg-indigo-950/60 border-b border-indigo-800/40 px-5 py-2.5 flex items-center justify-between text-xs text-indigo-300">
               <div className="flex items-center gap-1.5 font-semibold">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 <span>Mode Fokus Aktif — Bebas Gangguan</span>
@@ -811,16 +822,16 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
           )}
 
           {/* Card Top Header */}
-          <div className={`${isFocusMode ? 'bg-slate-50/50 dark:bg-slate-800/40 p-4 sm:p-5' : 'bg-slate-50 dark:bg-slate-800/80 p-5 sm:p-6'} border-b border-slate-100 dark:border-slate-800 flex justify-between items-center transition-all`}>
+          <div className={`${isFocusMode ? 'bg-slate-800/40 p-4 sm:p-5 border-b border-slate-800' : 'p-5 sm:p-6 border-b border-slate-100/60 dark:border-slate-800/60'} flex justify-between items-center transition-all`}>
             <div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">
+              <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100">
                 Lembar Kerja {levelId} - Soal #{currentIndex + 1}
               </h3>
               {!isFocusMode && (
-                <p className="text-xs text-slate-500 dark:text-slate-400">Kerjakan perhitungan matematika dengan cepat dan teliti.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Kerjakan perhitungan matematika dengan cepat dan teliti.</p>
               )}
             </div>
-            <span className="text-xs font-bold bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-2xs">
+            <span className="text-xs font-black clay-badge px-3.5 py-1.5 rounded-full text-indigo-600 dark:text-indigo-400">
               Soal {currentIndex + 1} dari {questions.length}
             </span>
           </div>
@@ -829,11 +840,11 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
           <div className={`${isFocusMode ? 'p-5 sm:p-8 space-y-5' : 'p-6 sm:p-8 space-y-6'}`}>
             {/* Visual Dots if applicable */}
             {currentQ.visualItems?.type === 'dots' && (
-              <div className="flex flex-wrap items-center justify-center gap-2 max-w-sm mx-auto p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="flex flex-wrap items-center justify-center gap-2 max-w-sm mx-auto p-4 clay-inset rounded-2xl">
                 {Array.from({ length: currentQ.visualItems.count }).map((_, dIdx) => (
                   <span
                     key={dIdx}
-                    className="w-8 h-8 rounded-full bg-rose-500 shadow-xs flex items-center justify-center font-bold text-white text-xs"
+                    className="w-8 h-8 rounded-full bg-rose-500 shadow-sm flex items-center justify-center font-bold text-white text-xs"
                   >
                     ●
                   </span>
@@ -843,16 +854,16 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
             {/* Prompt & Math Formula Rendering */}
             <div className="text-center py-2 space-y-3">
-              <h2 className={`font-medium text-slate-800 dark:text-slate-100 tracking-normal ${isFocusMode ? 'text-xl sm:text-2xl font-semibold' : 'text-lg sm:text-xl'}`}>
+              <h2 className={`font-semibold text-slate-800 dark:text-slate-100 tracking-normal ${isFocusMode ? 'text-xl sm:text-2xl font-bold' : 'text-lg sm:text-xl'}`}>
                 {currentQ.prompt}
               </h2>
 
               {currentQ.mathFormula ? (
-                <div className={`p-4 sm:p-6 ${isFocusMode ? 'bg-slate-50 dark:bg-slate-800/90 border-2 border-indigo-200/50 dark:border-indigo-900/50 shadow-md' : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 shadow-2xs'} rounded-2xl overflow-x-auto overflow-y-visible flex items-center justify-center max-w-xl mx-auto`}>
+                <div className={`p-4 sm:p-6 ${isFocusMode ? 'bg-slate-800/90 border-2 border-indigo-200/50 dark:border-indigo-900/50' : 'clay-inset'} rounded-[24px] overflow-x-auto overflow-y-visible flex items-center justify-center max-w-xl mx-auto`}>
                   <KaTeXMath math={currentQ.mathFormula} block className={`${isFocusMode ? 'text-3xl sm:text-5xl' : 'text-2xl sm:text-4xl'} text-slate-900 dark:text-white font-semibold`} />
                 </div>
               ) : currentQ.isLatex ? (
-                <div className={`p-3 sm:p-5 ${isFocusMode ? 'bg-slate-50 dark:bg-slate-800/90 border-2 border-indigo-200/50 dark:border-indigo-900/50 shadow-md' : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 shadow-2xs'} rounded-2xl overflow-x-auto overflow-y-visible flex items-center justify-center max-w-xl mx-auto`}>
+                <div className={`p-3 sm:p-5 ${isFocusMode ? 'bg-slate-800/90 border-2 border-indigo-200/50 dark:border-indigo-900/50' : 'clay-inset'} rounded-[24px] overflow-x-auto overflow-y-visible flex items-center justify-center max-w-xl mx-auto`}>
                   <KaTeXMath math={currentQ.prompt} block className={`${isFocusMode ? 'text-2xl sm:text-4xl' : 'text-2xl sm:text-3xl'} text-slate-900 dark:text-white font-medium`} />
                 </div>
               ) : null}
@@ -874,10 +885,10 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                           checkAnswer(opt);
                         }
                       }}
-                      className={`p-3.5 sm:p-4 rounded-xl font-bold text-base border transition-all cursor-pointer min-h-[56px] flex items-center justify-center ${
+                      className={`p-3.5 sm:p-4 rounded-2xl font-black text-base transition-all cursor-pointer min-h-[58px] flex items-center justify-center ${
                         isSelected
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 dark:shadow-none'
-                          : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700'
+                          ? 'clay-btn text-white'
+                          : 'clay-btn-secondary text-slate-800 dark:text-slate-100'
                       }`}
                     >
                       {isMathOpt ? <KaTeXMath math={opt} /> : <span>{opt}</span>}
@@ -905,7 +916,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                       value={inputVal}
                       onChange={(e) => setInputVal(e.target.value)}
                       placeholder="Masukkan jawaban..."
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-dashed border-indigo-200 dark:border-indigo-800 focus:border-indigo-600 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 text-indigo-700 dark:text-indigo-300 font-mono text-xl sm:text-2xl font-bold text-center focus:outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-950 transition-all"
+                      className="w-full px-4 py-3.5 clay-input rounded-2xl text-indigo-700 dark:text-indigo-300 font-mono text-xl sm:text-2xl font-black text-center focus:outline-none focus:ring-3 focus:ring-indigo-400/40 transition-all"
                     />
                   </div>
 
@@ -914,10 +925,10 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                       id="worksheet-check-button"
                       type="submit"
                       disabled={!inputVal.trim()}
-                      className={`px-5 py-3 rounded-xl font-bold text-sm sm:text-base flex items-center gap-1.5 transition-all cursor-pointer ${
+                      className={`px-5 py-3.5 rounded-2xl font-black text-sm sm:text-base flex items-center gap-1.5 transition-all cursor-pointer ${
                         inputVal.trim()
-                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 dark:shadow-none active:scale-95'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed border border-slate-200 dark:border-slate-700'
+                          ? 'clay-btn text-white'
+                          : 'clay-btn-secondary opacity-60 cursor-not-allowed'
                       }`}
                     >
                       <span>Cek</span>
@@ -942,12 +953,12 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
             {/* Answer feedback and explanation */}
             {currentState?.submitted && (
-              <div className={`p-4 rounded-xl border text-sm max-w-md mx-auto space-y-3 ${
+              <div className={`p-4 rounded-2xl border text-sm max-w-md mx-auto space-y-3 ${
                 currentState.isCorrect
                   ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
                   : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200'
               }`}>
-                <div className="flex items-center justify-between font-bold text-sm">
+                <div className="flex items-center justify-between font-black text-sm">
                   <div className="flex items-center gap-2">
                     {currentState.isCorrect ? (
                       <>
@@ -975,7 +986,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                 {!currentState.isCorrect && !showSolutionDuringPractice && (
                   <div className="text-xs">
                     Kunci Jawaban:{' '}
-                    <strong className="font-mono bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300">
+                    <strong className="font-mono bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300">
                       {currentQ.correctAnswer}
                     </strong>
                   </div>
@@ -983,9 +994,9 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
                 {/* Expandable Step-by-Step Solution Breakdown during practice */}
                 {showSolutionDuringPractice && (
-                  <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5 text-xs text-slate-800 dark:text-slate-200 shadow-xs">
+                  <div className="clay-card-sm p-4 rounded-2xl space-y-2.5 text-xs text-slate-800 dark:text-slate-200">
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider text-[10px] flex items-center gap-1">
+                      <span className="font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider text-[10px] flex items-center gap-1">
                         <Sparkles className="w-3 h-3 text-amber-500" />
                         Langkah Pengerjaan Rinci:
                       </span>
@@ -996,7 +1007,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
                     <div className="space-y-1">
                       {(currentQ.stepByStepSolution || []).map((step, sIdx) => (
-                        <div key={sIdx} className="p-2 bg-slate-50 dark:bg-slate-800/60 rounded-md border-l-2 border-indigo-500 text-[11px]">
+                        <div key={sIdx} className="p-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl border-l-3 border-indigo-500 text-[11px]">
                           <MathText text={step} />
                         </div>
                       ))}
@@ -1014,7 +1025,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
           </div>
 
           {/* Card Footer Toolbar */}
-          <div className="p-5 sm:p-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+          <div className="p-5 sm:p-6 bg-slate-50/70 dark:bg-slate-850/70 border-t border-slate-100/60 dark:border-slate-800/60 flex justify-between items-center">
             {/* Progress Dots */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               {questions.map((q, idx) => {
@@ -1023,9 +1034,9 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                 let dotClass = 'bg-slate-200 dark:bg-slate-700';
 
                 if (st?.submitted) {
-                  dotClass = st.isCorrect ? 'bg-emerald-500' : 'bg-rose-500';
+                  dotClass = st.isCorrect ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-rose-500 shadow-sm shadow-rose-500/50';
                 } else if (isCurrent) {
-                  dotClass = 'bg-indigo-600 ring-2 ring-indigo-200 dark:ring-indigo-800';
+                  dotClass = 'bg-indigo-600 ring-2 ring-indigo-300 dark:ring-indigo-700 scale-125';
                 }
 
                 return (
@@ -1038,7 +1049,7 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                       setInputVal(answersState[q.id]?.userAnswer || '');
                     }}
                     title={`Soal ${idx + 1}`}
-                    className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all cursor-pointer ${dotClass}`}
+                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full transition-all cursor-pointer ${dotClass}`}
                   />
                 );
               })}
@@ -1050,13 +1061,13 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
                 id="worksheet-next-question-button"
                 type="button"
                 onClick={handleNextQuestion}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 sm:px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none flex items-center gap-2 transition-all cursor-pointer active:scale-95 text-xs sm:text-sm"
+                className="clay-btn text-white px-6 sm:px-8 py-2.5 rounded-2xl font-black flex items-center gap-2 cursor-pointer text-xs sm:text-sm"
               >
                 <span>{currentIndex === questions.length - 1 ? 'Selesai Lembar' : 'Soal Berikutnya'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
-              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium hidden sm:inline">
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold hidden sm:inline">
                 Isi jawaban lalu klik Cek
               </span>
             )}
@@ -1066,15 +1077,15 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
 
       {/* Professional Status Footer (Hidden in Focus Mode for Zero Distraction) */}
       {!isFocusMode && (
-        <footer className="py-2 sm:h-10 bg-slate-800 dark:bg-slate-900 border-t dark:border-slate-800 text-white flex flex-col sm:flex-row items-center px-4 sm:px-8 justify-between text-[11px] font-medium tracking-wide transition-colors duration-200 gap-1 sm:gap-0">
+        <footer className="py-2.5 sm:h-11 clay-nav text-slate-600 dark:text-slate-300 flex flex-col sm:flex-row items-center px-4 sm:px-8 justify-between text-[11px] font-bold tracking-wide transition-colors duration-200 gap-1 sm:gap-0 mt-4">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4">
-            <span className="uppercase">Level {levelId} • Target {levelInfo.standardTimeMinutes} Menit</span>
-            <span className="text-slate-500 hidden sm:inline">|</span>
-            <span className="text-amber-300 font-bold">@copyright by. Pak GuruAi</span>
+            <span className="uppercase text-slate-500 dark:text-slate-400">Level {levelId} • Target {levelInfo.standardTimeMinutes} Menit</span>
+            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+            <span className="text-indigo-600 dark:text-indigo-400 font-black">AlgoriMath • @copyright by. Pak GuruAi</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-            <span className="text-slate-300 uppercase tracking-wider text-[10px]">SISTEM AKTIF</span>
+            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-sm shadow-emerald-500/50"></div>
+            <span className="text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] font-black">SISTEM AKTIF</span>
           </div>
         </footer>
       )}

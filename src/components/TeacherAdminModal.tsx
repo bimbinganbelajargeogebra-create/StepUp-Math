@@ -365,23 +365,23 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-3 sm:p-6 backdrop-blur-xs overflow-y-auto">
-      <div className="flex flex-col w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-3 sm:p-6 backdrop-blur-sm overflow-y-auto">
+      <div className="flex flex-col w-full max-w-4xl clay-card rounded-[32px] overflow-hidden my-auto max-h-[92vh]">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-900 text-white border-b border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-amber-300 shadow-sm">
+        <div className="flex items-center justify-between px-6 py-4 bg-slate-900/90 dark:bg-slate-950/90 text-white border-b border-slate-800/80">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl clay-btn flex items-center justify-center text-amber-300">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-base text-white">Panel Pengajar / Pak GuruAI</h3>
-                <span className="px-2 py-0.5 bg-indigo-800/80 text-indigo-200 text-[10px] font-bold rounded-md border border-indigo-700">
+                <h3 className="font-black text-base text-white">Panel Pengajar / Pak GuruAI</h3>
+                <span className="px-2.5 py-0.5 clay-badge text-indigo-300 text-[10px] font-black rounded-full">
                   Database Cloud Live
                 </span>
               </div>
-              <p className="text-xs text-indigo-300">Persetujuan Siswa, Grafik Kemajuan Harian, Kontrol 18 Level &amp; Database</p>
+              <p className="text-xs text-indigo-200 font-medium">Persetujuan Siswa, Grafik Kemajuan Harian, Kontrol 18 Level &amp; Database</p>
             </div>
           </div>
 
@@ -389,14 +389,14 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
             id="admin-modal-close-btn"
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl clay-btn-secondary text-slate-300 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab selector */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 px-4 sm:px-6 pt-2 overflow-x-auto">
+        <div className="flex border-b border-slate-100/60 dark:border-slate-800/60 clay-inset px-4 sm:px-6 pt-2 gap-1.5 overflow-x-auto m-3 rounded-2xl">
           {[
             { 
               id: 'approvals', 
@@ -422,16 +422,16 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                 id={`admin-tab-${tab.id}`}
                 type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-black whitespace-nowrap transition-all cursor-pointer rounded-xl ${
                   isActive
-                    ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-900 rounded-t-xl shadow-xs'
-                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    ? 'clay-btn text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
                 {tab.badge !== null && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white">
                     {tab.badge}
                   </span>
                 )}

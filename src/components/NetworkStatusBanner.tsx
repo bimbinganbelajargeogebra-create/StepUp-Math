@@ -79,16 +79,16 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({ onSync
       id="network-status-banner"
       role="status"
       aria-live="polite"
-      className={`w-full transition-all duration-300 z-50 print:hidden ${
-        !isOnline
-          ? 'bg-amber-600 dark:bg-amber-700 text-white shadow-md'
-          : 'bg-emerald-600 dark:bg-emerald-700 text-white shadow-md'
-      }`}
+      className="w-full z-50 print:hidden px-3 pt-2"
     >
-      <div className="max-w-7xl mx-auto px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+      <div className={`max-w-7xl mx-auto px-4 py-2 sm:py-2.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm transition-all duration-300 shadow-md ${
+        !isOnline
+          ? 'clay-btn-amber text-white'
+          : 'clay-btn-emerald text-white'
+      }`}>
         {/* Left Side: Status Message & Icon */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="p-1 rounded-md bg-white/20 shrink-0 flex items-center justify-center">
+          <div className="p-1.5 rounded-xl bg-white/20 shrink-0 flex items-center justify-center shadow-xs">
             {!isOnline ? (
               <WifiOff className="w-4 h-4 text-white animate-pulse" />
             ) : (
@@ -99,19 +99,19 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({ onSync
           <div className="leading-snug">
             {!isOnline ? (
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span className="font-bold tracking-tight">Perangkat Sedang Offline</span>
-                <span className="text-amber-100 text-[11px] sm:text-xs">
-                  • Mode mandiri aktif. Lembar kerja, streak, dan progres tersimpan di cache lokal dan akan otomatis diunggah ke database saat tersambung.
+                <span className="font-extrabold tracking-tight">Perangkat Sedang Offline</span>
+                <span className="text-amber-100 text-[11px] sm:text-xs font-medium">
+                  • Mode mandiri aktif. Lembar kerja, streak, dan progres tersimpan di cache lokal AlgoriMath.
                 </span>
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span className="font-bold tracking-tight flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                <span className="font-extrabold tracking-tight flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-100" />
                   Database Cloud Terhubung
                 </span>
-                <span className="text-emerald-100 text-[11px] sm:text-xs">
-                  • Seluruh data belajar telah sinkron real-time dengan basis data cloud (Pukul {lastSyncedTime}).
+                <span className="text-emerald-100 text-[11px] sm:text-xs font-medium">
+                  • Seluruh data belajar telah sinkron real-time dengan basis data cloud AlgoriMath (Pukul {lastSyncedTime}).
                 </span>
               </div>
             )}
@@ -120,7 +120,7 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({ onSync
 
         {/* Right Side: Storage badge & manual sync button */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/20 text-[11px] font-medium border border-white/20">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/20 text-[11px] font-bold border border-white/20 backdrop-blur-xs">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
             <span>Database Cloud Aktif</span>
           </div>
@@ -130,10 +130,10 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({ onSync
             id="manual-sync-btn"
             onClick={handleManualSync}
             disabled={isSyncing}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white text-slate-900 hover:bg-slate-100 active:scale-95 text-xs font-bold transition-all shadow-2xs cursor-pointer disabled:opacity-75"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-slate-800 hover:bg-slate-50 active:scale-95 text-xs font-black transition-all shadow-sm cursor-pointer disabled:opacity-75"
             title="Sinkronkan data dengan database cloud"
           >
-            <RefreshCw className={`w-3 h-3 text-indigo-600 ${isSyncing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan'}</span>
           </button>
 
@@ -142,7 +142,7 @@ export const NetworkStatusBanner: React.FC<NetworkStatusBannerProps> = ({ onSync
               type="button"
               id="close-online-banner-btn"
               onClick={() => setShowOnlineToast(false)}
-              className="p-1 rounded hover:bg-white/20 text-white text-xs cursor-pointer ml-1"
+              className="p-1.5 rounded-xl hover:bg-white/20 text-white text-xs cursor-pointer ml-1"
               aria-label="Tutup pemberitahuan"
             >
               ✕
