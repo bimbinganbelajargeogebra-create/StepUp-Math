@@ -365,9 +365,9 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         // Auto sign-in if password was entered
         if (loginPassword && loginPassword === acc.password) {
           const isPretestDone = Boolean(
-            acc.pretestCompleted ||
-            acc.pretestResult ||
-            (acc.startingLevel && acc.startingLevel !== null)
+            acc.pretestCompleted === true &&
+            acc.startingLevel &&
+            acc.startingLevel !== null
           );
           const assignedStartingLevel = isPretestDone ? (acc.startingLevel || '6A') : null;
           const currentLvl = isPretestDone ? (acc.currentLevel || assignedStartingLevel || '6A') : '6A';
