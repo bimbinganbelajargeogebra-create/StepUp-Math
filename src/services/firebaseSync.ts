@@ -81,10 +81,12 @@ export class FirebaseDatabaseService {
         grade: accountData.grade || 'SD Kelas 3',
         school: accountData.school?.trim() || '',
         avatar: accountData.avatar || '🦊',
-        status: 'pending',
+        status: 'approved', // Langsung aktif agar siswa dapat langsung login dan tes diagnostik
         role: 'student',
         createdAt: now,
         updatedAt: now,
+        approvedAt: now,
+        reviewedBy: 'Pendaftaran Siswa Baru',
         startingLevel: null,
         currentLevel: '6A',
         pretestCompleted: false,
@@ -97,7 +99,7 @@ export class FirebaseDatabaseService {
       // Always save to local storage immediately so registration is guaranteed
       upsertStoredAccount(newAccount);
 
-      // Attempt Firestore check & sync
+      // Save to Firestore
       try {
         await ensureFirebaseAuth();
         const accountRef = doc(db, 'accounts', cleanUsername);
@@ -115,17 +117,15 @@ export class FirebaseDatabaseService {
           return { success: false, message: `Username "${cleanUsername}" sudah digunakan di database. Silakan gunakan username lain.` };
         }
 
-        // Write to Firestore in background
-        setDoc(accountRef, newAccount).catch((writeErr) => {
-          console.warn('Firestore setDoc deferred notice:', writeErr);
-        });
+        // Write to Firestore immediately
+        await setDoc(accountRef, newAccount);
       } catch (cloudErr) {
         console.warn('Firebase register sync deferred to local storage:', cloudErr);
       }
 
       return { 
         success: true, 
-        message: 'Pendaftaran berhasil! Akun Anda sedang menunggu persetujuan (Approve) Guru / Admin.',
+        message: 'Pendaftaran berhasil! Akun Anda aktif. Silakan masuk untuk melaksanakan Tes Diagnostik Penempatan Level.',
         account: newAccount 
       };
     } catch (error) {
@@ -289,11 +289,17 @@ export class FirebaseDatabaseService {
         console.warn('Firestore login fetch notice (using local cache if present):', cloudErr);
       }
 
-      // Check local pretest results fallback
+      // Check local pretest results fallback ONLY if strictly belonging to this student
       if (account && !account.pretestCompleted) {
         const localPretest = getStoredPretestResult();
         const localProfile = getStoredProfile();
-        if (localPretest && (localProfile?.username?.toLowerCase() === cleanUsername || !localProfile?.username)) {
+        const isStrictOwner = Boolean(
+          localProfile?.username && 
+          localProfile.username.toLowerCase() === cleanUsername && 
+          localPretest
+        );
+
+        if (isStrictOwner && localPretest) {
           account.pretestCompleted = true;
           account.startingLevel = localPretest.assignedLevel || account.startingLevel || '6A';
           account.currentLevel = localPretest.assignedLevel || account.currentLevel || '6A';
@@ -314,14 +320,19 @@ export class FirebaseDatabaseService {
         return { success: false, message: 'Password salah. Silakan periksa kembali.' };
       }
 
-      // Check approval status: students must be approved by Teacher/Admin
+      // Auto-approve pending accounts so the student can immediately proceed to the diagnostic pretest
       if (account.status === 'pending') {
-        return {
-          success: false,
-          status: 'pending',
-          account,
-          message: 'Akun Anda sedang dalam proses verifikasi (Menunggu Approval Guru / Admin). Silakan hubungi guru Anda untuk menyetujui akun Anda di Panel Admin.'
-        };
+        account.status = 'approved';
+        account.approvedAt = Date.now();
+        account.reviewedBy = 'Sistem Pendaftaran';
+        upsertStoredAccount(account);
+        ensureFirebaseAuth().then(() => {
+          setDoc(doc(db, 'accounts', cleanUsername), {
+            status: 'approved',
+            approvedAt: Date.now(),
+            reviewedBy: 'Sistem Pendaftaran'
+          }, { merge: true }).catch((err) => console.warn('Account auto-approve write notice:', err));
+        }).catch(() => {});
       }
 
       if (account.status === 'rejected') {

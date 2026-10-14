@@ -20,6 +20,7 @@ import { KumonLevelId, PretestResult, StudentProfile } from '../types';
 import { KaTeXMath } from './KaTeXMath';
 import { Scratchpad } from './Scratchpad';
 import { savePretestResult, AppTheme } from '../utils/storage';
+import { FirebaseDatabaseService } from '../services/firebaseSync';
 
 interface PretestScreenProps {
   profile: StudentProfile;
@@ -64,7 +65,7 @@ export const PretestScreen: React.FC<PretestScreenProps> = ({
     }
   };
 
-  const finishPretest = () => {
+  const finishPretest = async () => {
     const calc = calculateStartingLevel(selectedAnswers);
 
     const breakdown: Record<string, { total: number; correct: number }> = {};
@@ -91,6 +92,13 @@ export const PretestScreen: React.FC<PretestScreenProps> = ({
     savePretestResult(pretestRes, profile.username);
     setResult(pretestRes);
     setIsSubmitted(true);
+
+    // Save directly to Firebase Firestore backend
+    try {
+      await FirebaseDatabaseService.savePretestResult(pretestRes, profile.username);
+    } catch (err) {
+      console.warn('Firebase direct savePretestResult notice:', err);
+    }
 
     try {
       confetti({

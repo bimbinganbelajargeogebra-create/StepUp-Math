@@ -17,6 +17,7 @@ import {
   getStoredTheme,
   saveStoredTheme,
   sanitizeStudentLevelProgress,
+  generateCleanLevelProgress,
   AppTheme
 } from './utils/storage';
 import { FirebaseDatabaseService } from './services/firebaseSync';
@@ -252,8 +253,14 @@ export default function App() {
           profile={profile}
           theme={theme}
           onToggleTheme={handleToggleTheme}
-          onComplete={(assignedLevel) => {
+          onComplete={async (assignedLevel) => {
             const currentProf = getStoredProfile() || profile;
+            
+            // 1. Generate clean level progress with assigned level (and prior foundational levels) unlocked
+            const cleanProgress = generateCleanLevelProgress(assignedLevel, true);
+            saveStoredLevelProgress(cleanProgress);
+
+            // 2. Updated student profile
             const updated: StudentProfile = {
               ...currentProf,
               pretestCompleted: true,
@@ -263,13 +270,24 @@ export default function App() {
               lastStudiedWorksheet: 1
             };
             saveStoredProfile(updated);
-            if (updated.username) {
-              FirebaseDatabaseService.saveProfile(updated).catch(err => console.warn('Cloud sync on complete notice:', err));
+
+            // 3. Immediately persist to Firebase backend (profile, levelProgress, and pretestResult)
+            try {
+              await FirebaseDatabaseService.saveProfile(updated);
+              await FirebaseDatabaseService.saveLevelProgress(cleanProgress);
+              const latestPretest = getStoredPretestResult();
+              if (latestPretest) {
+                await FirebaseDatabaseService.savePretestResult(latestPretest, updated.username);
+              }
+            } catch (err) {
+              console.warn('Firebase direct save on pretest complete notice:', err);
             }
+
+            // 4. Update React state
             setProfile(updated);
-            setLevelProgress(getStoredLevelProgress());
+            setLevelProgress(cleanProgress);
             setPretestResult(getStoredPretestResult());
-            showToast(`Level awal belajar Anda ditetapkan pada Level ${assignedLevel}`);
+            showToast(`Tes diagnostik selesai! Level awal Anda ditetapkan pada Level ${assignedLevel} dan lembar kerja otomatis terbuka.`);
           }}
         />
       );

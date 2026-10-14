@@ -217,14 +217,16 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         const acc = result.account;
         const existing = getStoredProfile();
         const existingPretest = getStoredPretestResult();
-        const isSameStudent = existing?.username?.toLowerCase() === acc.username.toLowerCase();
+        const isSameStudent = Boolean(
+          existing?.username && 
+          acc.username && 
+          existing.username.toLowerCase() === acc.username.toLowerCase()
+        );
         
         const isPretestDone = Boolean(
           acc.pretestCompleted ||
-          acc.pretestResult ||
-          (acc.startingLevel && acc.startingLevel !== null) ||
-          (isSameStudent && existing?.pretestCompleted) ||
-          (existingPretest && isSameStudent)
+          (acc.startingLevel && acc.startingLevel !== null && acc.startingLevel !== undefined) ||
+          (isSameStudent && existing?.pretestCompleted && existing?.startingLevel)
         );
 
         const assignedStartingLevel = isPretestDone
@@ -469,10 +471,11 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
       });
 
       if (res.success && res.account) {
-        setPendingAccount(res.account);
-        setSuccessNotice(res.message);
+        setPendingAccount(null);
+        setSuccessNotice(res.message || `Pendaftaran berhasil! Akun @${cleanUsername} telah aktif. Silakan klik Masuk untuk melaksanakan Tes Diagnostik Penempatan Level.`);
         setLoginUsername(cleanUsername);
         setLoginPassword(cleanPassword);
+        setActiveTab('login');
       } else {
         setError(res.message || 'Gagal mendaftarkan akun.');
       }
@@ -599,16 +602,30 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
 
           {/* Success Notice Banner */}
           {successNotice && (
-            <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm flex items-start gap-2.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <span className="font-bold block">{successNotice}</span>
-                {pendingAccount && (
-                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
-                    Status saat ini: <strong className="uppercase">Menunggu Approval Guru</strong>. Akun akan aktif setelah disetujui di Panel Admin.
-                  </p>
-                )}
+            <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm flex flex-col gap-2.5">
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="font-bold block">{successNotice}</span>
+                  {pendingAccount && (
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
+                      Status saat ini: <strong className="uppercase">Menunggu Approval Guru</strong>. Akun akan aktif setelah disetujui di Panel Admin.
+                    </p>
+                  )}
+                </div>
               </div>
+
+              {activeTab === 'login' && loginUsername && loginPassword && (
+                <button
+                  type="button"
+                  onClick={handleLogin}
+                  disabled={isSubmittingLogin}
+                  className="w-full py-2.5 px-3.5 clay-btn-emerald text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Langsung Masuk &amp; Mulai Tes Diagnostik</span>
+                </button>
+              )}
             </div>
           )}
 

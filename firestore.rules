@@ -45,6 +45,10 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /studentPretests/{username} {
+      allow read, write: if true;
+    }
+
     // Ping / Diagnostic connection test collection
     match /_connection_test/{docId} {
       allow read, write: if true;
