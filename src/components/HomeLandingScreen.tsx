@@ -24,24 +24,28 @@ import {
 } from 'lucide-react';
 import { MathLogo } from './MathLogo';
 import { KUMON_LEVEL_ORDER, KUMON_LEVELS } from '../data/curriculumData';
-import { KumonLevelId } from '../types';
+import { KumonLevelId, StudentProfile } from '../types';
 import { KaTeXMath } from './KaTeXMath';
 import { AppTheme } from '../utils/storage';
 
 interface HomeLandingScreenProps {
   theme?: AppTheme;
+  profile?: StudentProfile | null;
   onToggleTheme?: () => void;
   onOpenLogin: (initialTab?: 'login' | 'register') => void;
   onQuickTrial: () => void;
   onStartPretest: () => void;
+  onReturnToDashboard?: () => void;
 }
 
 export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
   theme = 'light',
+  profile,
   onToggleTheme,
   onOpenLogin,
   onQuickTrial,
-  onStartPretest
+  onStartPretest,
+  onReturnToDashboard
 }) => {
   const [activeCategory, setActiveCategory] = useState<string>('Semua');
   const [previewLevelId, setPreviewLevelId] = useState<KumonLevelId>('E');
@@ -78,6 +82,10 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
   };
 
   const selectedLevelInfo = KUMON_LEVELS[previewLevelId];
+
+  const isStudentLoggedIn = Boolean(profile && profile.accessGranted);
+  const hasCompletedPretest = Boolean(profile?.pretestCompleted && profile?.startingLevel);
+  const studentLevel = profile?.currentLevel || profile?.startingLevel || '6A';
 
   return (
     <div className="min-h-screen clay-bg-app text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-200 flex flex-col relative overflow-x-hidden">
@@ -124,25 +132,48 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
               </button>
             )}
 
-            <button
-              id="home-quick-trial-btn"
-              type="button"
-              onClick={onQuickTrial}
-              className="hidden sm:flex clay-btn clay-btn-amber px-4 py-2 text-xs font-bold gap-1.5 rounded-2xl cursor-pointer"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-900" />
-              <span>Coba Trial</span>
-            </button>
+            {isStudentLoggedIn ? (
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-2xl clay-card-sm text-xs font-bold text-slate-700 dark:text-slate-200">
+                  <span className="text-base">{profile?.avatar || '🦊'}</span>
+                  <span className="max-w-[120px] truncate">{profile?.name}</span>
+                  <span className="clay-badge px-2 py-0.5 text-[10px] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 rounded-lg">
+                    Level {studentLevel}
+                  </span>
+                </div>
+                <button
+                  id="home-dashboard-btn"
+                  type="button"
+                  onClick={onReturnToDashboard || onStartPretest}
+                  className="clay-btn clay-btn-primary px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold gap-2 rounded-2xl cursor-pointer"
+                >
+                  <Play className="w-3.5 h-3.5 fill-white text-white" />
+                  <span>Dashboard Belajar</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  id="home-quick-trial-btn"
+                  type="button"
+                  onClick={onQuickTrial}
+                  className="hidden sm:flex clay-btn clay-btn-amber px-4 py-2 text-xs font-bold gap-1.5 rounded-2xl cursor-pointer"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-900" />
+                  <span>Coba Trial</span>
+                </button>
 
-            <button
-              id="home-login-btn"
-              type="button"
-              onClick={() => onOpenLogin('login')}
-              className="clay-btn clay-btn-primary px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold gap-2 rounded-2xl cursor-pointer"
-            >
-              <KeyRound className="w-3.5 h-3.5 text-amber-300" />
-              <span>Masuk Belajar</span>
-            </button>
+                <button
+                  id="home-login-btn"
+                  type="button"
+                  onClick={() => onOpenLogin('login')}
+                  className="clay-btn clay-btn-primary px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold gap-2 rounded-2xl cursor-pointer"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Masuk Belajar</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -169,26 +200,52 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3.5 pt-2">
-                <button
-                  id="hero-start-pretest-btn"
-                  type="button"
-                  onClick={() => setShowPretestChoiceModal(true)}
-                  className="clay-btn clay-btn-primary px-6 py-4 text-sm sm:text-base rounded-[24px] cursor-pointer gap-2.5"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>Mulai Tes Diagnostik Penempatan</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                {hasCompletedPretest ? (
+                  <>
+                    <button
+                      id="hero-continue-learning-btn"
+                      type="button"
+                      onClick={onReturnToDashboard || onStartPretest}
+                      className="clay-btn clay-btn-primary px-6 py-4 text-sm sm:text-base rounded-[24px] cursor-pointer gap-2.5"
+                    >
+                      <Play className="w-4 h-4 fill-white text-white" />
+                      <span>Lanjutkan Belajar di Level {studentLevel}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
 
-                <button
-                  id="hero-trial-btn"
-                  type="button"
-                  onClick={onQuickTrial}
-                  className="clay-btn clay-btn-secondary px-5 py-4 text-sm sm:text-base rounded-[24px] cursor-pointer gap-2 font-bold"
-                >
-                  <Zap className="w-4 h-4 text-amber-500" />
-                  <span>Coba Akses Trial</span>
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPretestChoiceModal(true)}
+                      className="clay-btn clay-btn-secondary px-5 py-4 text-xs sm:text-sm rounded-[24px] cursor-pointer gap-2 font-bold"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <span>Pretest Selesai (Level {profile?.startingLevel})</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      id="hero-start-pretest-btn"
+                      type="button"
+                      onClick={() => setShowPretestChoiceModal(true)}
+                      className="clay-btn clay-btn-primary px-6 py-4 text-sm sm:text-base rounded-[24px] cursor-pointer gap-2.5"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>Mulai Tes Diagnostik Penempatan (Wajib 1x)</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      id="hero-trial-btn"
+                      type="button"
+                      onClick={onQuickTrial}
+                      className="clay-btn clay-btn-secondary px-5 py-4 text-sm sm:text-base rounded-[24px] cursor-pointer gap-2 font-bold"
+                    >
+                      <Zap className="w-4 h-4 text-amber-500" />
+                      <span>Coba Akses Trial</span>
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Cross-device real-time sync notification */}
@@ -529,15 +586,27 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3.5 shrink-0">
-            <button
-              id="footer-start-now-btn"
-              type="button"
-              onClick={() => onOpenLogin('login')}
-              className="w-full sm:w-auto clay-btn clay-btn-primary px-6 py-4 text-sm font-bold gap-2 rounded-[22px]"
-            >
-              <KeyRound className="w-4 h-4 text-amber-300" />
-              <span>Masuk Akun Siswa</span>
-            </button>
+            {isStudentLoggedIn ? (
+              <button
+                id="footer-start-now-btn"
+                type="button"
+                onClick={onReturnToDashboard || onStartPretest}
+                className="w-full sm:w-auto clay-btn clay-btn-primary px-6 py-4 text-sm font-bold gap-2 rounded-[22px]"
+              >
+                <Play className="w-4 h-4 fill-white text-white" />
+                <span>Lanjutkan Belajar (Level {studentLevel})</span>
+              </button>
+            ) : (
+              <button
+                id="footer-start-now-btn"
+                type="button"
+                onClick={() => onOpenLogin('login')}
+                className="w-full sm:w-auto clay-btn clay-btn-primary px-6 py-4 text-sm font-bold gap-2 rounded-[22px]"
+              >
+                <KeyRound className="w-4 h-4 text-amber-300" />
+                <span>Masuk Akun Siswa</span>
+              </button>
+            )}
 
             <button
               id="footer-quick-trial-btn"
@@ -568,66 +637,116 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
       {showPretestChoiceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <div className="clay-card p-6 sm:p-8 max-w-md w-full space-y-5 text-slate-800 dark:text-slate-100">
-            <div className="w-14 h-14 rounded-2xl clay-card-sm text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
-              <Sparkles className="w-7 h-7" />
-            </div>
+            {hasCompletedPretest ? (
+              <div className="space-y-4">
+                <div className="w-14 h-14 rounded-2xl clay-card-sm text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
 
-            <div className="text-center space-y-2">
-              <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                Tes Diagnostik Penempatan Level
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                Tes Diagnostik Awal merupakan penentu titik level belajar Anda. Sesuai ketentuan, <strong>siswa harus mendaftar dan disetujui (Approved) oleh Guru / Admin terlebih dahulu</strong> sebelum dapat login dan melaksanakan tes awal.
-              </p>
-            </div>
+                <div className="text-center space-y-2">
+                  <span className="clay-badge px-3 py-1 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[11px] font-black uppercase tracking-wider rounded-full">
+                    Pretest Wajib Dilakukan 1 Kali Saja
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                    Pretest Diagnostik Telah Selesai!
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Sesuai ketentuan, <strong>Pretest Diagnostik Penempatan (Wajib) dilakukan hanya 1 kali</strong>. Anda telah menyelesaikan tes diagnostik dengan rekomendasi penempatan di <strong>Level {profile?.startingLevel}</strong>. Seluruh progres belajar tersimpan di database backend, dan pembelajaran Anda dilanjutkan sesuai level tersebut.
+                  </p>
+                </div>
 
-            <div className="space-y-2.5 pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPretestChoiceModal(false);
-                  onOpenLogin('login');
-                }}
-                className="w-full clay-btn clay-btn-primary py-3 px-4 text-xs sm:text-sm font-bold gap-2 rounded-2xl flex items-center justify-center cursor-pointer"
-              >
-                <KeyRound className="w-4 h-4 text-amber-300" />
-                <span>Masuk Akun (Bagi yang Sudah Disetujui)</span>
-              </button>
+                <div className="p-3.5 clay-inset rounded-2xl flex items-center justify-between text-xs font-bold">
+                  <span className="text-slate-600 dark:text-slate-400">Level Penempatan:</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">Level {profile?.startingLevel}</span>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPretestChoiceModal(false);
-                  onOpenLogin('register');
-                }}
-                className="w-full clay-btn clay-btn-secondary py-3 px-4 text-xs sm:text-sm font-bold gap-2 rounded-2xl flex items-center justify-center cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4 text-indigo-500" />
-                <span>Daftar Akun Baru (Menunggu Approval)</span>
-              </button>
+                <div className="space-y-2.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPretestChoiceModal(false);
+                      if (onReturnToDashboard) onReturnToDashboard();
+                      else onStartPretest();
+                    }}
+                    className="w-full clay-btn clay-btn-primary py-3.5 px-4 text-xs sm:text-sm font-bold gap-2 rounded-2xl flex items-center justify-center cursor-pointer"
+                  >
+                    <Play className="w-4 h-4 fill-white text-white" />
+                    <span>Lanjutkan Belajar di Level {studentLevel}</span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPretestChoiceModal(false);
-                  onQuickTrial();
-                }}
-                className="w-full clay-btn clay-btn-amber py-2.5 px-4 text-xs font-bold gap-2 rounded-2xl flex items-center justify-center cursor-pointer text-amber-950"
-              >
-                <Zap className="w-3.5 h-3.5 text-amber-800" />
-                <span>Coba Simulasi Singkat (Trial 1 Lembar)</span>
-              </button>
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPretestChoiceModal(false)}
+                    className="w-full clay-btn clay-btn-secondary py-2.5 px-4 text-xs font-bold rounded-2xl cursor-pointer"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="w-14 h-14 rounded-2xl clay-card-sm text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
+                  <Sparkles className="w-7 h-7" />
+                </div>
 
-            <div className="text-center pt-1">
-              <button
-                type="button"
-                onClick={() => setShowPretestChoiceModal(false)}
-                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold cursor-pointer"
-              >
-                Batal
-              </button>
-            </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                    Tes Diagnostik Penempatan Level (Wajib 1x)
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Tes Diagnostik Awal merupakan penentu titik level belajar Anda (dilakukan 1 kali). Sesuai ketentuan, <strong>siswa harus mendaftar dan disetujui (Approved) oleh Guru / Admin terlebih dahulu</strong> sebelum dapat login dan melaksanakan tes awal.
+                  </p>
+                </div>
+
+                <div className="space-y-2.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPretestChoiceModal(false);
+                      onOpenLogin('login');
+                    }}
+                    className="w-full clay-btn clay-btn-primary py-3 px-4 text-xs sm:text-sm font-bold gap-2 rounded-2xl flex items-center justify-center cursor-pointer"
+                  >
+                    <KeyRound className="w-4 h-4 text-amber-300" />
+                    <span>Masuk Akun (Bagi yang Sudah Disetujui)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPretestChoiceModal(false);
+                      onOpenLogin('register');
+                    }}
+                    className="w-full clay-btn clay-btn-secondary py-3 px-4 text-xs sm:text-sm font-bold gap-2 rounded-2xl flex items-center justify-center cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                    <span>Daftar Akun Baru (Menunggu Approval)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPretestChoiceModal(false);
+                      onQuickTrial();
+                    }}
+                    className="w-full clay-btn clay-btn-amber py-2.5 px-4 text-xs font-bold gap-2 rounded-2xl flex items-center justify-center cursor-pointer text-amber-950"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-800" />
+                    <span>Coba Simulasi Singkat (Trial 1 Lembar)</span>
+                  </button>
+                </div>
+
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowPretestChoiceModal(false)}
+                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

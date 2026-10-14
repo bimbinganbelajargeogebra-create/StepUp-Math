@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   CheckCircle2, 
@@ -40,6 +40,13 @@ export const PretestScreen: React.FC<PretestScreenProps> = ({
   const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [result, setResult] = useState<PretestResult | null>(null);
+
+  // Safeguard: Pretest is strictly 1-time only. If profile already completed pretest, auto-advance directly to learning.
+  useEffect(() => {
+    if (profile?.pretestCompleted && profile?.startingLevel) {
+      onComplete(profile.startingLevel);
+    }
+  }, [profile?.pretestCompleted, profile?.startingLevel, onComplete]);
 
   const currentQ = PRETEST_QUESTIONS[currentIndex];
   const progressPercent = Math.round(((currentIndex + 1) / PRETEST_QUESTIONS.length) * 100);
@@ -123,12 +130,16 @@ export const PretestScreen: React.FC<PretestScreenProps> = ({
         <div className="w-full max-w-2xl clay-card text-slate-900 dark:text-slate-100 rounded-[32px] overflow-hidden animate-fade-in z-10">
           {/* Header */}
           <div className="bg-slate-900/90 dark:bg-slate-950/90 p-6 sm:p-8 text-white text-center border-b border-slate-800/80 relative">
-            <div className="w-14 h-14 clay-btn rounded-2xl mx-auto mb-3 flex items-center justify-center text-white font-bold text-2xl">
+            <div className="w-14 h-14 clay-btn rounded-2xl mx-auto mb-3 flex items-center justify-center text-white font-bold text-2xl shadow-xs">
               <Award className="w-8 h-8 text-amber-300" />
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10px] font-black uppercase tracking-wider mb-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Pretest Selesai (1x) • Tersimpan di Backend Database</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Hasil Pretest Diagnostik Selesai!</h2>
             <p className="text-slate-300 dark:text-slate-400 text-xs sm:text-sm mt-1 font-medium">
-              Level belajar mandiri matematika untuk <strong>{profile.name}</strong> telah ditentukan
+              Level belajar mandiri matematika untuk <strong>{profile.name}</strong> telah ditentukan pada <strong>Level {result.assignedLevel}</strong>
             </p>
           </div>
 
@@ -199,9 +210,9 @@ export const PretestScreen: React.FC<PretestScreenProps> = ({
               id="start-learning-button"
               type="button"
               onClick={() => onComplete(result.assignedLevel)}
-              className="w-full py-4 clay-btn text-white font-black rounded-2xl flex items-center justify-center gap-2 text-base transition-all cursor-pointer"
+              className="w-full py-4 clay-btn text-white font-black rounded-2xl flex items-center justify-center gap-2 text-base transition-all cursor-pointer shadow-md"
             >
-              <span>Mulai Belajar di Level {result.assignedLevel}</span>
+              <span>Lanjutkan Pembelajaran di Level {result.assignedLevel} (Lembar Kerja #1)</span>
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
@@ -265,20 +276,20 @@ export const PretestScreen: React.FC<PretestScreenProps> = ({
         {/* Welcome Notice Banner */}
         <div className="w-full mb-4 p-3.5 clay-card-sm rounded-2xl flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl clay-btn text-white flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl clay-btn text-white flex items-center justify-center shrink-0 shadow-xs">
               <Target className="w-4 h-4" />
             </div>
             <div>
               <p className="text-xs font-black text-indigo-950 dark:text-indigo-200">
-                Pretest Diagnostik Penempatan Level (Wajib)
+                Pretest Diagnostik Penempatan Level (Wajib • Dilakukan 1 Kali)
               </p>
               <p className="text-[11px] text-indigo-800/80 dark:text-indigo-300/80 font-medium">
-                Selamat! Akun Anda telah disetujui Pak GuruAI. Kerjakan pretest ini untuk menentukan titik awal belajar yang paling tepat.
+                Dilakukan 1 kali saja. Setelah selesai, level awal belajar Anda langsung ditetapkan dan tersimpan permanen di database backend.
               </p>
             </div>
           </div>
           <span className="hidden sm:inline-flex px-3 py-1 clay-badge text-[10px] font-black text-indigo-700 dark:text-indigo-300 rounded-full shrink-0">
-            Mandiri & Jujur
+            Wajib 1x Saja
           </span>
         </div>
 

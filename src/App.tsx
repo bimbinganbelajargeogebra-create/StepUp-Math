@@ -230,6 +230,7 @@ export default function App() {
       return (
         <HomeLandingScreen
           theme={theme}
+          profile={profile}
           onToggleTheme={handleToggleTheme}
           onOpenLogin={(tab) => {
             setLoginInitialTab(tab || 'login');
@@ -240,6 +241,7 @@ export default function App() {
             setLoginInitialTab('register');
             setShowLoginModal(true);
           }}
+          onReturnToDashboard={() => setShowHomeViewLoggedIn(false)}
         />
       );
     }
@@ -312,10 +314,12 @@ export default function App() {
       return (
         <HomeLandingScreen
           theme={theme}
+          profile={profile}
           onToggleTheme={handleToggleTheme}
           onOpenLogin={() => setShowHomeViewLoggedIn(false)}
           onQuickTrial={() => setShowHomeViewLoggedIn(false)}
           onStartPretest={() => setShowHomeViewLoggedIn(false)}
+          onReturnToDashboard={() => setShowHomeViewLoggedIn(false)}
         />
       );
     }
