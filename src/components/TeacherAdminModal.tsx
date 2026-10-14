@@ -117,10 +117,10 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
     setProcessingUsername(username);
     setActionSuccessNotice(null);
     try {
-      const chosenLevel = startingLevel || approvalLevelChoices[username] || '6A';
+      const chosenLevel = startingLevel || approvalLevelChoices[username];
       const ok = await FirebaseDatabaseService.approveAccount(username, profile?.name || 'Pak GuruAI', chosenLevel);
       if (ok) {
-        setActionSuccessNotice(`Akun @${username} berhasil DISETUJUI! Siswa otomatis diarahkan mengikuti Pretest Diagnostik (Wajib) saat login pertama untuk penempatan level.`);
+        setActionSuccessNotice(`Akun @${username} berhasil DISETUJUI! Siswa sekarang dapat login dan akan langsung diarahkan mengikuti Tes Awal Diagnostik Penempatan Level.`);
         setTimeout(() => setActionSuccessNotice(null), 5000);
       }
     } catch (e) {
@@ -629,33 +629,16 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                         <div className="flex flex-wrap items-center gap-1.5 self-end sm:self-center shrink-0">
                           {isPending && (
                             <>
-                              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 pl-1">Level:</span>
-                                <select
-                                  value={approvalLevelChoices[acc.username] || '6A'}
-                                  onChange={(e) => {
-                                    setApprovalLevelChoices(prev => ({
-                                      ...prev,
-                                      [acc.username]: e.target.value as KumonLevelId
-                                    }));
-                                  }}
-                                  className="text-xs font-bold bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 rounded-lg px-2 py-1 border border-slate-200 dark:border-slate-700 outline-none cursor-pointer"
-                                >
-                                  {KUMON_LEVEL_ORDER.map(lvl => (
-                                    <option key={lvl} value={lvl}>Level {lvl}</option>
-                                  ))}
-                                </select>
-                              </div>
-
                               <button
                                 id={`approve-btn-${acc.username}`}
                                 type="button"
                                 disabled={isProcessing}
                                 onClick={() => handleApprove(acc.username)}
                                 className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                                title="Beri akses akun ke siswa. Siswa dapat login dan langsung melaksanakan tes awal diagnostik penempatan level."
                               >
                                 <UserCheck className="w-3.5 h-3.5" />
-                                <span>Setujui</span>
+                                <span>Setujui (Approve)</span>
                               </button>
 
                               <button

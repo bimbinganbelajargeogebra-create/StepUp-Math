@@ -47,6 +47,7 @@ import { FirebaseDatabaseService } from '../services/firebaseSync';
 import { MathLogo } from './MathLogo';
 
 interface LoginAccessModalProps {
+  initialTab?: 'login' | 'register' | 'status';
   theme?: AppTheme;
   onToggleTheme?: () => void;
   onBackToHome?: () => void;
@@ -56,13 +57,14 @@ interface LoginAccessModalProps {
 const AVATARS = ['🦊', '🐼', '🦁', '🦉', '🚀', '⭐', '🐬', '🐯'];
 
 export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({ 
+  initialTab = 'login',
   theme = 'light',
   onToggleTheme,
   onBackToHome,
   onSuccess 
 }) => {
   const existingProfile = getStoredProfile();
-  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'status'>('login');
+  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'status'>(initialTab);
   
   // Login State
   const [loginUsername, setLoginUsername] = useState(existingProfile?.username || existingProfile?.name || '');
@@ -224,17 +226,17 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         );
         
         const isPretestDone = Boolean(
-          acc.pretestCompleted ||
-          (acc.startingLevel && acc.startingLevel !== null && acc.startingLevel !== undefined) ||
-          (isSameStudent && existing?.pretestCompleted && existing?.startingLevel)
+          acc.pretestCompleted === true && 
+          acc.startingLevel && 
+          acc.startingLevel !== null
         );
 
         const assignedStartingLevel = isPretestDone
-          ? (acc.startingLevel || (isSameStudent ? existing?.startingLevel : null) || existingPretest?.assignedLevel || '6A')
+          ? (acc.startingLevel || '6A')
           : null;
 
         const currentLvl = isPretestDone
-          ? (acc.currentLevel || (isSameStudent ? existing?.currentLevel : null) || assignedStartingLevel || '6A')
+          ? (acc.currentLevel || assignedStartingLevel || '6A')
           : '6A';
 
         const lastStudiedLvl = acc.lastStudiedLevel || (isSameStudent ? existing?.lastStudiedLevel : undefined) || (isPretestDone ? assignedStartingLevel : undefined);
@@ -471,8 +473,8 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
       });
 
       if (res.success && res.account) {
-        setPendingAccount(null);
-        setSuccessNotice(res.message || `Pendaftaran berhasil! Akun @${cleanUsername} telah aktif. Silakan klik Masuk untuk melaksanakan Tes Diagnostik Penempatan Level.`);
+        setPendingAccount(res.account);
+        setSuccessNotice(res.message || `Pendaftaran berhasil! Akun @${cleanUsername} telah terdaftar dan berstatus MENUNGGU PERSETUJUAN (PENDING) dari Guru / Admin. Setelah disetujui, Anda baru dapat login untuk melaksanakan Tes Diagnostik Awal.`);
         setLoginUsername(cleanUsername);
         setLoginPassword(cleanPassword);
         setActiveTab('login');
@@ -615,16 +617,30 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                 </div>
               </div>
 
-              {activeTab === 'login' && loginUsername && loginPassword && (
-                <button
-                  type="button"
-                  onClick={handleLogin}
-                  disabled={isSubmittingLogin}
-                  className="w-full py-2.5 px-3.5 clay-btn-emerald text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Langsung Masuk &amp; Mulai Tes Diagnostik</span>
-                </button>
+              {pendingAccount ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCheckPendingStatus}
+                    disabled={isCheckingStatus}
+                    className="w-full py-2.5 px-3.5 clay-btn-amber text-amber-950 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isCheckingStatus ? 'animate-spin' : ''}`} />
+                    <span>{isCheckingStatus ? 'Memeriksa Persetujuan...' : 'Cek Status Persetujuan Guru'}</span>
+                  </button>
+                </div>
+              ) : (
+                activeTab === 'login' && loginUsername && loginPassword && (
+                  <button
+                    type="button"
+                    onClick={handleLogin}
+                    disabled={isSubmittingLogin}
+                    className="w-full py-2.5 px-3.5 clay-btn-emerald text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Masuk ke Akun Saya</span>
+                  </button>
+                )
               )}
             </div>
           )}
@@ -653,7 +669,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
               </div>
 
               <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                Pendaftaran akun Anda telah tersimpan di database. Silakan hubungi Guru / Admin untuk menyetujui (Approve) akun Anda di Panel Guru.
+                Pendaftaran akun Anda telah tersimpan di database. Akun Anda sedang menunggu verifikasi &amp; persetujuan (Approval) dari Guru / Admin. <strong>Sebelum disetujui, Anda belum dapat login dan belum dapat mengerjakan tes diagnostik awal.</strong> Silakan beritahu Guru Anda untuk memberikan persetujuan akun di Panel Admin.
               </p>
 
               <div className="flex flex-wrap items-center gap-2 pt-1">

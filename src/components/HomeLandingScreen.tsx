@@ -31,7 +31,7 @@ import { AppTheme } from '../utils/storage';
 interface HomeLandingScreenProps {
   theme?: AppTheme;
   onToggleTheme?: () => void;
-  onOpenLogin: () => void;
+  onOpenLogin: (initialTab?: 'login' | 'register') => void;
   onQuickTrial: () => void;
   onStartPretest: () => void;
 }
@@ -137,7 +137,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
             <button
               id="home-login-btn"
               type="button"
-              onClick={onOpenLogin}
+              onClick={() => onOpenLogin('login')}
               className="clay-btn clay-btn-primary px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold gap-2 rounded-2xl cursor-pointer"
             >
               <KeyRound className="w-3.5 h-3.5 text-amber-300" />
@@ -200,7 +200,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
                   Sudah pernah pretest di HP / laptop lain?{' '}
                   <button
                     type="button"
-                    onClick={onOpenLogin}
+                    onClick={() => onOpenLogin('login')}
                     className="text-indigo-600 dark:text-indigo-400 font-bold underline hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer"
                   >
                     Masuk Akun di Sini
@@ -305,7 +305,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
                     </span>
                     <button
                       type="button"
-                      onClick={onOpenLogin}
+                      onClick={() => onOpenLogin('login')}
                       className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
                     >
                       Buka Semua Level →
@@ -498,7 +498,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
                     </span>
                     <button
                       type="button"
-                      onClick={onOpenLogin}
+                      onClick={() => onOpenLogin('login')}
                       className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <span>Mulai Level Ini</span>
@@ -532,7 +532,7 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
             <button
               id="footer-start-now-btn"
               type="button"
-              onClick={onOpenLogin}
+              onClick={() => onOpenLogin('login')}
               className="w-full sm:w-auto clay-btn clay-btn-primary px-6 py-4 text-sm font-bold gap-2 rounded-[22px]"
             >
               <KeyRound className="w-4 h-4 text-amber-300" />
@@ -574,35 +574,48 @@ export const HomeLandingScreen: React.FC<HomeLandingScreenProps> = ({
 
             <div className="text-center space-y-2">
               <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                Mulai Pretest atau Masuk Akun?
+                Tes Diagnostik Penempatan Level
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                Jika Anda sudah pernah mengerjakan tes diagnostik atau memiliki akun di HP/laptop lain, silakan <strong>Masuk Akun</strong> agar level belajar Anda langsung tersinkron real-time tanpa perlu pretest ulang.
+                Tes Diagnostik Awal merupakan penentu titik level belajar Anda. Sesuai ketentuan, <strong>siswa harus mendaftar dan disetujui (Approved) oleh Guru / Admin terlebih dahulu</strong> sebelum dapat login dan melaksanakan tes awal.
               </p>
             </div>
 
-            <div className="space-y-3 pt-2">
+            <div className="space-y-2.5 pt-1">
               <button
                 type="button"
                 onClick={() => {
                   setShowPretestChoiceModal(false);
-                  onOpenLogin();
+                  onOpenLogin('login');
                 }}
-                className="w-full clay-btn clay-btn-primary py-3.5 px-4 text-sm font-bold gap-2 rounded-2xl"
+                className="w-full clay-btn clay-btn-primary py-3 px-4 text-xs sm:text-sm font-bold gap-2 rounded-2xl flex items-center justify-center cursor-pointer"
               >
                 <KeyRound className="w-4 h-4 text-amber-300" />
-                <span>Masuk Akun Saya (Sudah Pernah Pretest)</span>
+                <span>Masuk Akun (Bagi yang Sudah Disetujui)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => {
                   setShowPretestChoiceModal(false);
-                  onStartPretest();
+                  onOpenLogin('register');
                 }}
-                className="w-full clay-btn clay-btn-secondary py-3.5 px-4 text-sm font-bold gap-2 rounded-2xl"
+                className="w-full clay-btn clay-btn-secondary py-3 px-4 text-xs sm:text-sm font-bold gap-2 rounded-2xl flex items-center justify-center cursor-pointer"
               >
-                <span>Mulai Tes Diagnostik Baru</span>
+                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <span>Daftar Akun Baru (Menunggu Approval)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPretestChoiceModal(false);
+                  onQuickTrial();
+                }}
+                className="w-full clay-btn clay-btn-amber py-2.5 px-4 text-xs font-bold gap-2 rounded-2xl flex items-center justify-center cursor-pointer text-amber-950"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-800" />
+                <span>Coba Simulasi Singkat (Trial 1 Lembar)</span>
               </button>
             </div>
 

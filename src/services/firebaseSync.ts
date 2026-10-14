@@ -81,12 +81,10 @@ export class FirebaseDatabaseService {
         grade: accountData.grade || 'SD Kelas 3',
         school: accountData.school?.trim() || '',
         avatar: accountData.avatar || '🦊',
-        status: 'approved', // Langsung aktif agar siswa dapat langsung login dan tes diagnostik
+        status: 'pending', // Menunggu persetujuan (approval) Guru / Admin sebelum dapat login
         role: 'student',
         createdAt: now,
         updatedAt: now,
-        approvedAt: now,
-        reviewedBy: 'Pendaftaran Siswa Baru',
         startingLevel: null,
         currentLevel: '6A',
         pretestCompleted: false,
@@ -125,7 +123,7 @@ export class FirebaseDatabaseService {
 
       return { 
         success: true, 
-        message: 'Pendaftaran berhasil! Akun Anda aktif. Silakan masuk untuk melaksanakan Tes Diagnostik Penempatan Level.',
+        message: `Pendaftaran berhasil! Akun @${cleanUsername} sedang MENUNGGU PERSETUJUAN (PENDING) Guru / Admin. Setelah disetujui, Anda dapat masuk untuk melaksanakan Tes Diagnostik Awal.`,
         account: newAccount 
       };
     } catch (error) {
@@ -320,19 +318,14 @@ export class FirebaseDatabaseService {
         return { success: false, message: 'Password salah. Silakan periksa kembali.' };
       }
 
-      // Auto-approve pending accounts so the student can immediately proceed to the diagnostic pretest
+      // Block login for pending accounts - must be approved by Teacher / Admin first
       if (account.status === 'pending') {
-        account.status = 'approved';
-        account.approvedAt = Date.now();
-        account.reviewedBy = 'Sistem Pendaftaran';
-        upsertStoredAccount(account);
-        ensureFirebaseAuth().then(() => {
-          setDoc(doc(db, 'accounts', cleanUsername), {
-            status: 'approved',
-            approvedAt: Date.now(),
-            reviewedBy: 'Sistem Pendaftaran'
-          }, { merge: true }).catch((err) => console.warn('Account auto-approve write notice:', err));
-        }).catch(() => {});
+        return {
+          success: false,
+          status: 'pending',
+          account,
+          message: `Akun @${account.username} masih MENUNGGU PERSETUJUAN (PENDING) dari Guru / Admin. Anda belum dapat login dan belum dapat mengerjakan tes diagnostik sebelum akun disetujui.`
+        };
       }
 
       if (account.status === 'rejected') {
@@ -524,21 +517,28 @@ export class FirebaseDatabaseService {
     const cleanUsername = username.toLowerCase();
     try {
       const existing = getStoredAccountByUsername(cleanUsername);
-      let hasDonePretest = Boolean(existing?.pretestCompleted || existing?.startingLevel);
-      let assignedLevel = startingLevel || existing?.startingLevel || existing?.currentLevel || '6A';
+      let hasDonePretest = Boolean(existing?.pretestCompleted && existing?.startingLevel);
+      let assignedLevel: KumonLevelId | null = existing?.startingLevel || null;
 
       await ensureFirebaseAuth();
       const accountRef = doc(db, 'accounts', cleanUsername);
       const snap = await getDoc(accountRef);
       if (snap.exists()) {
         const snapData = snap.data();
-        if (snapData.pretestCompleted || snapData.startingLevel || snapData.pretestResult) {
+        if (snapData.pretestCompleted && snapData.startingLevel) {
           hasDonePretest = true;
-          assignedLevel = snapData.startingLevel || startingLevel || snapData.currentLevel || assignedLevel;
+          assignedLevel = snapData.startingLevel;
         }
       }
 
-      const cleanProgress = existing?.levelProgress || generateCleanLevelProgress(assignedLevel, true);
+      // If admin explicitly passed an override startingLevel
+      if (startingLevel) {
+        hasDonePretest = true;
+        assignedLevel = startingLevel;
+      }
+
+      const effectiveLevel = assignedLevel || '6A';
+      const cleanProgress = existing?.levelProgress || generateCleanLevelProgress(effectiveLevel, true);
 
       // 1. Update local storage cache immediately
       const updatedAccount: UserAccount = {
@@ -555,8 +555,8 @@ export class FirebaseDatabaseService {
         reviewedBy: adminName,
         updatedAt: Date.now(),
         pretestCompleted: hasDonePretest,
-        startingLevel: hasDonePretest ? assignedLevel : (startingLevel || null),
-        currentLevel: assignedLevel,
+        startingLevel: hasDonePretest ? assignedLevel : null,
+        currentLevel: effectiveLevel,
         levelProgress: cleanProgress
       };
       upsertStoredAccount(updatedAccount);
@@ -568,8 +568,8 @@ export class FirebaseDatabaseService {
         reviewedBy: adminName,
         updatedAt: Date.now(),
         pretestCompleted: hasDonePretest,
-        startingLevel: hasDonePretest ? assignedLevel : (startingLevel || null),
-        currentLevel: assignedLevel,
+        startingLevel: hasDonePretest ? assignedLevel : null,
+        currentLevel: effectiveLevel,
         levelProgress: cleanProgress
       }, { merge: true });
 
@@ -944,6 +944,22 @@ export class FirebaseDatabaseService {
         await setDoc(accountRef, accountPayload, { merge: true });
         if (cleanUser && cleanUser !== targetUsername) {
           await setDoc(doc(db, 'accounts', cleanUser), accountPayload, { merge: true });
+        }
+
+        // Also update local cached account immediately
+        const cached = getStoredAccountByUsername(targetUsername) || (cleanUser ? getStoredAccountByUsername(cleanUser) : null);
+        if (cached) {
+          upsertStoredAccount({
+            ...cached,
+            pretestCompleted: true,
+            startingLevel: result.assignedLevel,
+            currentLevel: result.assignedLevel,
+            lastStudiedLevel: result.assignedLevel,
+            lastStudiedWorksheet: 1,
+            levelProgress: progress,
+            pretestResult: result,
+            updatedAt: Date.now()
+          });
         }
 
         // Update studentPretests lookup under targetUsername and cleanUser

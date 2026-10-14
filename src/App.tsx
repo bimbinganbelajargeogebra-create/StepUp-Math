@@ -18,6 +18,8 @@ import {
   saveStoredTheme,
   sanitizeStudentLevelProgress,
   generateCleanLevelProgress,
+  getStoredAccountByUsername,
+  upsertStoredAccount,
   AppTheme
 } from './utils/storage';
 import { FirebaseDatabaseService } from './services/firebaseSync';
@@ -44,6 +46,7 @@ export default function App() {
 
   // Navigation / View State
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [loginInitialTab, setLoginInitialTab] = useState<'login' | 'register'>('login');
   const [showHomeViewLoggedIn, setShowHomeViewLoggedIn] = useState<boolean>(false);
   const [activeSession, setActiveSession] = useState<{
     levelId: KumonLevelId;
@@ -165,27 +168,30 @@ export default function App() {
   const handleQuickTrialStart = () => {
     const existing = getStoredProfile();
     const trialProfile: StudentProfile = {
-      name: existing?.name || 'Siswa Trial',
+      name: existing?.name || 'Siswa Simulasi Trial',
       grade: existing?.grade || 'SD Kelas 4',
       avatar: existing?.avatar || '🦊',
       joinedDate: existing?.joinedDate || Date.now(),
       accessGranted: true,
       isAdmin: false,
       isTrial: true,
-      pretestCompleted: existing?.pretestCompleted && existing?.isTrial ? existing.pretestCompleted : false,
-      startingLevel: existing?.isTrial ? existing.startingLevel : null,
-      currentLevel: existing?.isTrial ? existing.currentLevel : '6A',
+      pretestCompleted: true, // Trial langsung membuka simulasi latihan lembar kerja, bukan tes diagnostik resmi
+      startingLevel: '6A',
+      currentLevel: '6A',
       totalWorksheetsCompleted: existing?.isTrial ? existing.totalWorksheetsCompleted : 0,
       totalPoints: existing?.isTrial ? existing.totalPoints : 0,
       streakDays: existing?.isTrial ? existing.streakDays : 1,
       lastStudyDate: new Date().toISOString().split('T')[0]
     };
 
+    const cleanProg = generateCleanLevelProgress('6A', true);
+    saveStoredLevelProgress(cleanProg);
     saveStoredProfile(trialProfile);
     setProfile(trialProfile);
+    setLevelProgress(cleanProg);
     setShowLoginModal(false);
     setShowHomeViewLoggedIn(false);
-    showToast('Akses Uji Coba (Trial) aktif! Selamat belajar di AlgoriMath.');
+    showToast('Mode Uji Coba (Trial) aktif. Untuk tes diagnostik awal & penyimpanan progres, silakan daftar akun siswa.');
   };
 
   const handleLogout = () => {
@@ -207,6 +213,7 @@ export default function App() {
       if (showLoginModal) {
         return (
           <LoginAccessModal
+            initialTab={loginInitialTab}
             theme={theme}
             onToggleTheme={handleToggleTheme}
             onBackToHome={() => setShowLoginModal(false)}
@@ -224,29 +231,20 @@ export default function App() {
         <HomeLandingScreen
           theme={theme}
           onToggleTheme={handleToggleTheme}
-          onOpenLogin={() => setShowLoginModal(true)}
+          onOpenLogin={(tab) => {
+            setLoginInitialTab(tab || 'login');
+            setShowLoginModal(true);
+          }}
           onQuickTrial={handleQuickTrialStart}
           onStartPretest={() => {
-            handleQuickTrialStart();
+            setLoginInitialTab('register');
+            setShowLoginModal(true);
           }}
         />
       );
     }
 
-    // Step 0.5: If logged-in user explicitly wants to view the Home Landing screen
-    if (showHomeViewLoggedIn) {
-      return (
-        <HomeLandingScreen
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-          onOpenLogin={() => setShowHomeViewLoggedIn(false)}
-          onQuickTrial={() => setShowHomeViewLoggedIn(false)}
-          onStartPretest={() => setShowHomeViewLoggedIn(false)}
-        />
-      );
-    }
-
-    // Step 1: Diagnostic Pretest (Placement Test)
+    // Step 1: Diagnostic Pretest (Placement Test) - Mandatory upon first login after approval
     if (!profile.pretestCompleted) {
       return (
         <PretestScreen
@@ -279,6 +277,22 @@ export default function App() {
               if (latestPretest) {
                 await FirebaseDatabaseService.savePretestResult(latestPretest, updated.username);
               }
+              if (updated.username) {
+                const acc = getStoredAccountByUsername(updated.username);
+                if (acc) {
+                  upsertStoredAccount({
+                    ...acc,
+                    pretestCompleted: true,
+                    startingLevel: assignedLevel,
+                    currentLevel: assignedLevel,
+                    lastStudiedLevel: assignedLevel,
+                    lastStudiedWorksheet: 1,
+                    levelProgress: cleanProgress,
+                    pretestResult: latestPretest || undefined,
+                    updatedAt: Date.now()
+                  });
+                }
+              }
             } catch (err) {
               console.warn('Firebase direct save on pretest complete notice:', err);
             }
@@ -289,6 +303,19 @@ export default function App() {
             setPretestResult(getStoredPretestResult());
             showToast(`Tes diagnostik selesai! Level awal Anda ditetapkan pada Level ${assignedLevel} dan lembar kerja otomatis terbuka.`);
           }}
+        />
+      );
+    }
+
+    // Step 1.5: If logged-in user explicitly wants to view the Home Landing screen (only after pretest is completed)
+    if (showHomeViewLoggedIn) {
+      return (
+        <HomeLandingScreen
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          onOpenLogin={() => setShowHomeViewLoggedIn(false)}
+          onQuickTrial={() => setShowHomeViewLoggedIn(false)}
+          onStartPretest={() => setShowHomeViewLoggedIn(false)}
         />
       );
     }
