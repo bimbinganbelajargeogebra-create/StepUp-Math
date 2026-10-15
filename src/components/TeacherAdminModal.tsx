@@ -61,6 +61,7 @@ import { FirebaseDatabaseService, FirebaseSyncService } from '../services/fireba
 import { testFirebaseConnection } from '../lib/firebase';
 import { Cloud, CloudUpload, CloudDownload, Activity } from 'lucide-react';
 import { AdminDailyProgressView } from './AdminDailyProgressView';
+import { StudentProgressBlankoPrintModal } from './StudentProgressBlankoPrintModal';
 
 interface TeacherAdminModalProps {
   profile: StudentProfile | null;
@@ -106,6 +107,10 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
   const [rejectReasonInput, setRejectReasonInput] = useState('Data pendaftaran belum terverifikasi di bimbingan belajar.');
   const [actionSuccessNotice, setActionSuccessNotice] = useState<string | null>(null);
   const [processingUsername, setProcessingUsername] = useState<string | null>(null);
+
+  // Blanko Progress Print Modal State
+  const [showBlankoModal, setShowBlankoModal] = useState<boolean>(false);
+  const [blankoPrintStudent, setBlankoPrintStudent] = useState<string | null>(null);
 
   // Uploaded Files State
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFileItem[]>([]);
@@ -618,9 +623,9 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                 </div>
               </div>
 
-              {/* Filters & Search */}
+              {/* Filters & Search & Blanko Print */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs overflow-x-auto">
                   {[
                     { id: 'all', label: 'Semua' },
                     { id: 'pending', label: `Pending (${pendingCount})` },
@@ -631,7 +636,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                       key={f.id}
                       type="button"
                       onClick={() => setAccountsFilter(f.id as any)}
-                      className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
                         accountsFilter === f.id
                           ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -642,15 +647,32 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                   ))}
                 </div>
 
-                <div className="relative flex-1 max-w-xs">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={accountsSearch}
-                    onChange={(e) => setAccountsSearch(e.target.value)}
-                    placeholder="Cari nama, username, sekolah..."
-                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1 sm:w-60">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={accountsSearch}
+                      onChange={(e) => setAccountsSearch(e.target.value)}
+                      placeholder="Cari siswa..."
+                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <button
+                    id="admin-print-blanko-btn"
+                    type="button"
+                    onClick={() => {
+                      setBlankoPrintStudent(null);
+                      setShowBlankoModal(true);
+                    }}
+                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer whitespace-nowrap shrink-0"
+                    title="Cetak Blanko Lembar Kontrol & Progres Belajar Siswa (Administrasi Cetak / PDF)"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-amber-300" />
+                    <span className="hidden sm:inline">Cetak Blanko Progres (PDF)</span>
+                    <span className="sm:hidden">Blanko PDF</span>
+                  </button>
                 </div>
               </div>
 
@@ -829,6 +851,19 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                               <span>Setujui Ulang</span>
                             </button>
                           )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBlankoPrintStudent(acc.username);
+                              setShowBlankoModal(true);
+                            }}
+                            className="px-2 py-1 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 border border-indigo-200/80 dark:border-indigo-800/80"
+                            title={`Cetak Blanko Progres Siswa (${acc.name})`}
+                          >
+                            <Printer className="w-3.5 h-3.5 text-indigo-600" />
+                            <span className="hidden sm:inline">Blanko Progres</span>
+                          </button>
 
                           <button
                             type="button"
@@ -1530,6 +1565,18 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Student Progress Blanko Printable Modal */}
+      {showBlankoModal && (
+        <StudentProgressBlankoPrintModal
+          accounts={accounts}
+          initialSelectedUsername={blankoPrintStudent || undefined}
+          onClose={() => {
+            setShowBlankoModal(false);
+            setBlankoPrintStudent(null);
+          }}
+        />
       )}
 
     </div>

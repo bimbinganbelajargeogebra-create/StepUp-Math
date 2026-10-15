@@ -16,6 +16,8 @@
         "avatar": { "type": "string", "description": "Avatar icon string" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Admin review status" },
         "role": { "type": "string", "enum": ["student", "admin"], "description": "User role" },
+        "accessType": { "type": "string", "enum": ["full", "tiered"], "description": "Full access vs tiered with admin level promotion approval" },
+        "pendingPromotionLevel": { "type": "string", "description": "Level pending promotion approval if tiered" },
         "createdAt": { "type": "number", "description": "Creation timestamp" },
         "updatedAt": { "type": "number", "description": "Last update timestamp" },
         "approvedAt": { "type": "number", "description": "Approval timestamp" },

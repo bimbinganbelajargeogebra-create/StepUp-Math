@@ -72,6 +72,7 @@ export interface LevelProgress {
 }
 
 export type AccountStatus = 'pending' | 'approved' | 'rejected';
+export type AccessType = 'full' | 'tiered'; // 'full' = Full Akses otomatis terbuka, 'tiered' = Berjenjang menunggu approve admin
 
 export interface UserAccount {
   username: string; // unique lowercase key
@@ -82,6 +83,8 @@ export interface UserAccount {
   avatar: string;
   status: AccountStatus;
   role: 'student' | 'admin';
+  accessType?: AccessType; // full vs tiered
+  pendingPromotionLevel?: KumonLevelId | null; // Level yang menunggu approval guru jika tiered
   createdAt: number;
   updatedAt?: number;
   approvedAt?: number;
@@ -115,6 +118,8 @@ export interface StudentProfile {
   accessGranted: boolean;
   isAdmin?: boolean;
   isTrial?: boolean;
+  accessType?: AccessType; // full vs tiered
+  pendingPromotionLevel?: KumonLevelId | null;
   pretestCompleted: boolean;
   startingLevel: KumonLevelId | null;
   currentLevel: KumonLevelId;
