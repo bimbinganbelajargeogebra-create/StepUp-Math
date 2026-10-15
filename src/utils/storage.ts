@@ -12,7 +12,7 @@ import {
 } from '../types';
 import { KUMON_LEVEL_ORDER } from '../data/curriculumData';
 import { BADGE_DEFINITIONS, evaluateAllBadges } from '../data/badgesData';
-import { FirebaseSyncService } from '../services/firebaseSync';
+import { FirebaseSyncService, FirebaseDatabaseService } from '../services/firebaseSync';
 
 export const STORAGE_KEYS = {
   PROFILE: 'algorimath_student_profile',
@@ -300,6 +300,8 @@ export function saveSessionResult(result: WorksheetSessionResult): {
   updatedProgress: Record<KumonLevelId, LevelProgress>;
   isNewLevelUnlocked: boolean;
   unlockedLevelId?: KumonLevelId;
+  isWaitingApproval?: boolean;
+  pendingPromotionLevel?: KumonLevelId;
   newlyUnlockedBadges?: BadgeDefinition[];
 } {
   const history = getStoredSessionHistory();
@@ -309,6 +311,10 @@ export function saveSessionResult(result: WorksheetSessionResult): {
   } catch (e) {
     console.error('Failed to save history', e);
   }
+
+  const profile = getStoredProfile();
+  // Default to full access if not explicitly tiered
+  const isTieredAccess = profile?.accessType === 'tiered';
 
   const progress = getStoredLevelProgress();
   const lvlProg = progress[result.levelId] || {
@@ -335,23 +341,29 @@ export function saveSessionResult(result: WorksheetSessionResult): {
     lvlProg.completedWorksheets.sort((a, b) => a - b);
   }
 
-  // Check if entire level is mastered (e.g. at least 8 of 10 worksheets completed with >= 90 score)
+  // Check if entire level is mastered (e.g. at least 8 of 10 worksheets completed with >= 90 score or 10 worksheets completed)
   const completedCount = lvlProg.completedWorksheets.length;
   const avgTopScore = Object.values(lvlProg.highestScores).reduce((a, b) => a + b, 0) / (Object.keys(lvlProg.highestScores).length || 1);
   
   let isNewLevelUnlocked = false;
   let unlockedLevelId: KumonLevelId | undefined = undefined;
+  let isWaitingApproval = false;
+  let pendingPromotionLevel: KumonLevelId | undefined = undefined;
 
-  if (completedCount >= 8 && avgTopScore >= 85) {
+  const isLevelCompletedOrMastered = (completedCount >= 8 && avgTopScore >= 75) || completedCount >= 10 || (wNum === 10 && result.score >= 70);
+  if (isLevelCompletedOrMastered) {
     if (!lvlProg.mastered) {
       lvlProg.mastered = true;
       lvlProg.masteryDate = Date.now();
+    }
       
-      // Unlock next level in sequence
-      const currIdx = KUMON_LEVEL_ORDER.indexOf(result.levelId);
-      if (currIdx !== -1 && currIdx < KUMON_LEVEL_ORDER.length - 1) {
-        const nextLevelId = KUMON_LEVEL_ORDER[currIdx + 1];
-        if (!progress[nextLevelId]?.unlocked) {
+    // Check next level in sequence
+    const currIdx = KUMON_LEVEL_ORDER.indexOf(result.levelId);
+    if (currIdx !== -1 && currIdx < KUMON_LEVEL_ORDER.length - 1) {
+      const nextLevelId = KUMON_LEVEL_ORDER[currIdx + 1];
+      if (!progress[nextLevelId]?.unlocked) {
+        if (!isTieredAccess) {
+          // Full Akses: Akses level berikutnya otomatis terbuka langsung ketika levelnya selesai dikerjakan!
           progress[nextLevelId] = {
             ...(progress[nextLevelId] || {
               levelId: nextLevelId,
@@ -365,6 +377,13 @@ export function saveSessionResult(result: WorksheetSessionResult): {
           };
           isNewLevelUnlocked = true;
           unlockedLevelId = nextLevelId;
+        } else {
+          // Akses Berjenjang: Menunggu approve dari guru/admin untuk melanjutkan ke level berikutnya!
+          isWaitingApproval = true;
+          pendingPromotionLevel = nextLevelId;
+          if (profile) {
+            profile.pendingPromotionLevel = nextLevelId;
+          }
         }
       }
     }
@@ -374,7 +393,6 @@ export function saveSessionResult(result: WorksheetSessionResult): {
   saveStoredLevelProgress(progress);
 
   // Update profile points, streak, and last studied position
-  const profile = getStoredProfile();
   if (profile) {
     const today = new Date().toISOString().split('T')[0];
     let newStreak = profile.streakDays;
@@ -397,7 +415,12 @@ export function saveSessionResult(result: WorksheetSessionResult): {
     profile.lastStudiedWorksheet = result.worksheetNum;
     profile.lastStudiedScore = result.score;
     profile.lastStudiedAt = result.timestamp;
-    profile.currentLevel = result.levelId;
+    if (isNewLevelUnlocked && unlockedLevelId) {
+      profile.currentLevel = unlockedLevelId;
+    }
+    if (pendingPromotionLevel) {
+      profile.pendingPromotionLevel = pendingPromotionLevel;
+    }
     saveStoredProfile(profile);
 
     // Update account in accounts cache & database
@@ -410,13 +433,20 @@ export function saveSessionResult(result: WorksheetSessionResult): {
           lastStudiedWorksheet: result.worksheetNum,
           lastStudiedScore: result.score,
           lastStudiedAt: result.timestamp,
-          currentLevel: result.levelId,
+          currentLevel: isNewLevelUnlocked && unlockedLevelId ? unlockedLevelId : (existingAcc.currentLevel || result.levelId),
+          pendingPromotionLevel: pendingPromotionLevel || existingAcc.pendingPromotionLevel || null,
           totalWorksheetsCompleted: profile.totalWorksheetsCompleted,
           totalPoints: profile.totalPoints,
           streakDays: profile.streakDays,
           lastStudyDate: profile.lastStudyDate,
           levelProgress: progress,
           updatedAt: Date.now()
+        });
+      }
+
+      if (pendingPromotionLevel) {
+        FirebaseDatabaseService.requestLevelPromotion(profile.username, pendingPromotionLevel).catch((err) => {
+          console.warn('Background requestLevelPromotion cloud sync notice:', err);
         });
       }
     }
@@ -449,6 +479,8 @@ export function saveSessionResult(result: WorksheetSessionResult): {
     updatedProgress: progress,
     isNewLevelUnlocked,
     unlockedLevelId,
+    isWaitingApproval,
+    pendingPromotionLevel,
     newlyUnlockedBadges
   };
 }

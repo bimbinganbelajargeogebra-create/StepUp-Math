@@ -24,9 +24,10 @@ import {
   UserCheck,
   Award,
   Calendar,
-  Flame
+  Flame,
+  Layers
 } from 'lucide-react';
-import { StudentProfile, UserAccount, PretestResult } from '../types';
+import { StudentProfile, UserAccount, PretestResult, AccessType } from '../types';
 import { 
   ADMIN_PASSWORD,
   verifyAdminPassword, 
@@ -80,6 +81,7 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
   const [regGrade, setRegGrade] = useState('SD Kelas 3');
   const [regSchool, setRegSchool] = useState('');
   const [regAvatar, setRegAvatar] = useState('🦊');
+  const [regAccessType, setRegAccessType] = useState<AccessType>('full');
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [isSubmittingReg, setIsSubmittingReg] = useState(false);
 
@@ -254,6 +256,8 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
           accessGranted: true,
           isAdmin: acc.role === 'admin',
           isTrial: false,
+          accessType: acc.accessType || 'full',
+          pendingPromotionLevel: acc.pendingPromotionLevel || null,
           pretestCompleted: isPretestDone,
           startingLevel: assignedStartingLevel,
           currentLevel: currentLvl,
@@ -382,6 +386,8 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
             accessGranted: true,
             isAdmin: false,
             isTrial: false,
+            accessType: acc.accessType || 'full',
+            pendingPromotionLevel: acc.pendingPromotionLevel || null,
             pretestCompleted: isPretestDone,
             startingLevel: assignedStartingLevel,
             currentLevel: currentLvl,
@@ -469,7 +475,8 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
         password: cleanPassword,
         grade: regGrade,
         school: regSchool.trim(),
-        avatar: regAvatar
+        avatar: regAvatar,
+        accessType: regAccessType
       });
 
       if (res.success && res.account) {
@@ -988,6 +995,83 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                 </label>
               </div>
 
+              {/* Pilihan Tipe Akses Belajar (Full Akses vs Berjenjang) */}
+              <div className="space-y-1.5 pt-1">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  Pilihan Tipe Akses Belajar Siswa
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Full Akses Option */}
+                  <div
+                    onClick={() => setRegAccessType('full')}
+                    className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      regAccessType === 'full'
+                        ? 'bg-indigo-50/90 dark:bg-indigo-950/60 border-indigo-500 shadow-sm'
+                        : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-indigo-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="radio"
+                            id="reg-access-full"
+                            name="regAccessType"
+                            checked={regAccessType === 'full'}
+                            onChange={() => setRegAccessType('full')}
+                            className="text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100">
+                            Full Akses
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-black text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/80 px-2 py-0.5 rounded-full">
+                          Otomatis
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                        Level berikutnya <strong>otomatis terbuka langsung</strong> saat level selesai dikerjakan.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Berjenjang Option */}
+                  <div
+                    onClick={() => setRegAccessType('tiered')}
+                    className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      regAccessType === 'tiered'
+                        ? 'bg-amber-50/90 dark:bg-amber-950/60 border-amber-500 shadow-sm'
+                        : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-amber-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="radio"
+                            id="reg-access-tiered"
+                            name="regAccessType"
+                            checked={regAccessType === 'tiered'}
+                            onChange={() => setRegAccessType('tiered')}
+                            className="text-amber-600 focus:ring-amber-500"
+                          />
+                          <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100">
+                            Akses Berjenjang
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-black text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/80 px-2 py-0.5 rounded-full">
+                          Approve Guru
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                        Setelah level selesai, kenaikan level berikutnya <strong>menunggu approve Guru</strong> di Admin.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Submit Register */}
               <button
                 id="register-submit-btn"
@@ -1182,6 +1266,16 @@ export const LoginAccessModal: React.FC<LoginAccessModalProps> = ({
                       <span className="text-[10px] text-slate-500 block uppercase font-bold">Waktu Pendaftaran</span>
                       <span className="font-bold text-slate-800 dark:text-slate-200">
                         {new Date(statusLookupResult.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 clay-card-sm rounded-2xl col-span-2 sm:col-span-4">
+                      <span className="text-[10px] text-slate-500 block uppercase font-bold">Tipe Akses Belajar</span>
+                      <span className="font-extrabold text-xs text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 mt-0.5">
+                        <Layers className="w-3.5 h-3.5" />
+                        {statusLookupResult.accessType === 'tiered'
+                          ? 'Akses Berjenjang (Menunggu Approval Guru di Setiap Kenaikan Level)'
+                          : 'Full Akses (Otomatis Terbuka Langsung Saat Level Selesai)'}
                       </span>
                     </div>
                   </div>

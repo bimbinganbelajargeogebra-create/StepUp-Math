@@ -17,7 +17,8 @@ import {
   FileSpreadsheet,
   Zap,
   Building2,
-  BarChart3
+  BarChart3,
+  Layers
 } from 'lucide-react';
 import { StudentProfile, WorksheetSessionResult, PretestResult, KumonLevelId, LevelProgress } from '../types';
 import { KUMON_LEVELS } from '../data/curriculumData';
@@ -182,7 +183,18 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>Status Akun & Informasi Siswa</span>
                 </div>
-                <div>
+                <div className="flex items-center gap-1.5">
+                  {profile.accessType === 'tiered' ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
+                      <Layers className="w-3 h-3 text-amber-600" />
+                      Akses Berjenjang
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-900 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                      <Zap className="w-3 h-3 text-indigo-600" />
+                      Full Akses
+                    </span>
+                  )}
                   {profile.isAdmin ? (
                     <span className="px-3 py-1 clay-btn-emerald text-white text-[10px] font-black rounded-full flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" />
@@ -196,7 +208,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   ) : (
                     <span className="px-3 py-1 clay-btn-emerald text-white text-[10px] font-black rounded-full flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" />
-                      Disetujui & Aktif (Cloud)
+                      Aktif (Cloud)
                     </span>
                   )}
                 </div>
@@ -229,9 +241,9 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 )}
 
                 <div className="p-2.5 clay-inset rounded-xl">
-                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Tipe Akun</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">
-                    {profile.isAdmin ? 'Master Admin' : profile.isTrial ? 'Trial Sementara' : 'Siswa Reguler'}
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Tipe Akses Belajar</span>
+                  <span className="font-extrabold text-slate-800 dark:text-slate-200 block truncate">
+                    {profile.accessType === 'tiered' ? '🪜 Berjenjang' : '⚡ Full Akses'}
                   </span>
                 </div>
               </div>

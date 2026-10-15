@@ -87,7 +87,12 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [finalResult, setFinalResult] = useState<WorksheetSessionResult | null>(null);
-  const [unlockInfo, setUnlockInfo] = useState<{ isNewLevelUnlocked: boolean; unlockedLevelId?: KumonLevelId }>({
+  const [unlockInfo, setUnlockInfo] = useState<{ 
+    isNewLevelUnlocked: boolean; 
+    unlockedLevelId?: KumonLevelId;
+    isWaitingApproval?: boolean;
+    pendingPromotionLevel?: KumonLevelId;
+  }>({
     isNewLevelUnlocked: false
   });
   const [newlyUnlockedBadges, setNewlyUnlockedBadges] = useState<BadgeDefinition[]>([]);
@@ -348,16 +353,42 @@ export const WorksheetPracticeScreen: React.FC<WorksheetPracticeScreenProps> = (
               </div>
             </div>
 
-            {/* Unlock Notification if new level unlocked */}
+            {/* Unlock Notification: Full Akses vs Berjenjang */}
             {unlockInfo.isNewLevelUnlocked && unlockInfo.unlockedLevelId && (
-              <div className="p-4 sm:p-5 clay-card-sm bg-emerald-50/90 dark:bg-emerald-950/60 border-emerald-300/40 flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-2xl clay-btn-emerald text-white flex items-center justify-center font-bold text-lg shrink-0">
+              <div className="p-4 sm:p-5 clay-card-sm bg-emerald-50/90 dark:bg-emerald-950/60 border border-emerald-300/40 rounded-2xl flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl clay-btn-emerald text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-xs">
                   ★
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-emerald-900 dark:text-emerald-200 text-sm">Selamat! Level Baru Terbuka!</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-extrabold text-emerald-900 dark:text-emerald-200 text-sm">Level Baru Terbuka Otomatis!</h4>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-200 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200">
+                      Full Akses
+                    </span>
+                  </div>
                   <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
-                    Anda telah menguasai Level {levelId} dan membuka <strong>Level {unlockInfo.unlockedLevelId}</strong>.
+                    Anda telah menguasai Level {levelId} dan <strong>Level {unlockInfo.unlockedLevelId}</strong> langsung terbuka otomatis untuk dipelajari.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {unlockInfo.isWaitingApproval && unlockInfo.pendingPromotionLevel && (
+              <div className="p-4 sm:p-5 clay-card-sm bg-amber-50/90 dark:bg-amber-950/60 border border-amber-300/60 rounded-2xl flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-xs">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-extrabold text-amber-900 dark:text-amber-200 text-sm">
+                      Level {levelId} Selesai • Menunggu Approval Guru
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                      Akses Berjenjang
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-800 dark:text-amber-300 mt-1 leading-relaxed">
+                    Anda telah menyelesaikan lembar kerja Level {levelId}. Karena akun Anda menggunakan <strong>Akses Berjenjang</strong>, pembukaan <strong>Level {unlockInfo.pendingPromotionLevel}</strong> menunggu persetujuan (Approve) dari Guru di Panel Admin.
                   </p>
                 </div>
               </div>

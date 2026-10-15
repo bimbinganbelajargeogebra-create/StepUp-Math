@@ -22,6 +22,7 @@ import {
   PretestResult,
   UserAccount,
   AccountStatus,
+  AccessType,
   UnlockedBadge,
   ReflectionJournalEntry,
   UploadedFileItem
@@ -33,7 +34,9 @@ import {
   upsertStoredAccount,
   generateCleanLevelProgress,
   getStoredProfile,
+  saveStoredProfile,
   getStoredLevelProgress,
+  saveStoredLevelProgress,
   getStoredPretestResult,
   getStoredUploadedFiles,
   saveStoredUploadedFiles,
@@ -59,6 +62,7 @@ export class FirebaseDatabaseService {
     grade: string;
     school?: string;
     avatar: string;
+    accessType?: AccessType;
   }): Promise<{ success: boolean; message: string; account?: UserAccount }> {
     try {
       const cleanUsername = accountData.username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -88,6 +92,8 @@ export class FirebaseDatabaseService {
         avatar: accountData.avatar || '🦊',
         status: 'pending', // Menunggu persetujuan (approval) Guru / Admin sebelum dapat login
         role: 'student',
+        accessType: accountData.accessType || 'full', // 'full' = otomatis buka level, 'tiered' = menunggu approve guru
+        pendingPromotionLevel: null,
         createdAt: now,
         updatedAt: now,
         startingLevel: null,
@@ -635,6 +641,205 @@ export class FirebaseDatabaseService {
   }
 
   /**
+   * Update student access type (Full Akses vs Akses Berjenjang)
+   */
+  static async updateAccountAccessType(
+    username: string, 
+    accessType: AccessType,
+    adminName: string = 'Admin'
+  ): Promise<boolean> {
+    const cleanUsername = username.toLowerCase();
+    try {
+      const existing = getStoredAccountByUsername(cleanUsername);
+      if (existing) {
+        upsertStoredAccount({
+          ...existing,
+          accessType,
+          updatedAt: Date.now(),
+          reviewedBy: adminName
+        });
+      }
+
+      // Also update currently active profile if this user is logged in
+      const currentProf = getStoredProfile();
+      if (currentProf && currentProf.username?.toLowerCase() === cleanUsername) {
+        saveStoredProfile({
+          ...currentProf,
+          accessType
+        });
+      }
+
+      await ensureFirebaseAuth();
+      const accountRef = doc(db, 'accounts', cleanUsername);
+      await setDoc(accountRef, {
+        accessType,
+        updatedAt: Date.now(),
+        reviewedBy: adminName
+      }, { merge: true });
+
+      return true;
+    } catch (error) {
+      console.error('Firebase updateAccountAccessType error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Request level promotion for tiered access student (Menunggu Approval Guru)
+   */
+  static async requestLevelPromotion(
+    username: string, 
+    targetLevel: KumonLevelId
+  ): Promise<boolean> {
+    const cleanUsername = username.toLowerCase();
+    try {
+      const existing = getStoredAccountByUsername(cleanUsername);
+      if (existing) {
+        upsertStoredAccount({
+          ...existing,
+          pendingPromotionLevel: targetLevel,
+          updatedAt: Date.now()
+        });
+      }
+
+      const currentProf = getStoredProfile();
+      if (currentProf && currentProf.username?.toLowerCase() === cleanUsername) {
+        saveStoredProfile({
+          ...currentProf,
+          pendingPromotionLevel: targetLevel
+        });
+      }
+
+      await ensureFirebaseAuth();
+      const accountRef = doc(db, 'accounts', cleanUsername);
+      await setDoc(accountRef, {
+        pendingPromotionLevel: targetLevel,
+        updatedAt: Date.now()
+      }, { merge: true });
+
+      return true;
+    } catch (error) {
+      console.error('Firebase requestLevelPromotion error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Approve level promotion for student (Admin / Guru)
+   * Unlocks the requested level and moves student to that level
+   */
+  static async approveLevelPromotion(
+    username: string, 
+    targetLevel: KumonLevelId,
+    adminName: string = 'Pak GuruAI'
+  ): Promise<boolean> {
+    const cleanUsername = username.toLowerCase();
+    try {
+      const existing = getStoredAccountByUsername(cleanUsername);
+      const progress = existing?.levelProgress || getStoredLevelProgress();
+      
+      // Unlock the target level
+      progress[targetLevel] = {
+        ...(progress[targetLevel] || {
+          levelId: targetLevel,
+          mastered: false,
+          completedWorksheets: [],
+          highestScores: {},
+          bestTimes: {},
+          attemptsCount: {}
+        }),
+        unlocked: true
+      };
+
+      if (existing) {
+        upsertStoredAccount({
+          ...existing,
+          currentLevel: targetLevel,
+          lastStudiedLevel: targetLevel,
+          lastStudiedWorksheet: 1,
+          pendingPromotionLevel: null,
+          levelProgress: progress,
+          updatedAt: Date.now(),
+          reviewedBy: adminName
+        });
+      }
+
+      const currentProf = getStoredProfile();
+      if (currentProf && currentProf.username?.toLowerCase() === cleanUsername) {
+        saveStoredProfile({
+          ...currentProf,
+          currentLevel: targetLevel,
+          lastStudiedLevel: targetLevel,
+          lastStudiedWorksheet: 1,
+          pendingPromotionLevel: null
+        });
+        saveStoredLevelProgress(progress);
+      }
+
+      await ensureFirebaseAuth();
+      const accountRef = doc(db, 'accounts', cleanUsername);
+      await setDoc(accountRef, {
+        currentLevel: targetLevel,
+        lastStudiedLevel: targetLevel,
+        lastStudiedWorksheet: 1,
+        pendingPromotionLevel: null,
+        levelProgress: progress,
+        updatedAt: Date.now(),
+        reviewedBy: adminName
+      }, { merge: true });
+
+      return true;
+    } catch (error) {
+      console.error('Firebase approveLevelPromotion error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Reject / clear level promotion request
+   */
+  static async rejectLevelPromotion(
+    username: string,
+    adminName: string = 'Pak GuruAI',
+    reason?: string
+  ): Promise<boolean> {
+    const cleanUsername = username.toLowerCase();
+    try {
+      const existing = getStoredAccountByUsername(cleanUsername);
+      if (existing) {
+        upsertStoredAccount({
+          ...existing,
+          pendingPromotionLevel: null,
+          updatedAt: Date.now(),
+          reviewedBy: adminName
+        });
+      }
+
+      const currentProf = getStoredProfile();
+      if (currentProf && currentProf.username?.toLowerCase() === cleanUsername) {
+        saveStoredProfile({
+          ...currentProf,
+          pendingPromotionLevel: null
+        });
+      }
+
+      await ensureFirebaseAuth();
+      const accountRef = doc(db, 'accounts', cleanUsername);
+      await setDoc(accountRef, {
+        pendingPromotionLevel: null,
+        promotionRejectionReason: reason || 'Perlu pengulangan latihan lembar kerja pada level saat ini.',
+        updatedAt: Date.now(),
+        reviewedBy: adminName
+      }, { merge: true });
+
+      return true;
+    } catch (error) {
+      console.error('Firebase rejectLevelPromotion error:', error);
+      return false;
+    }
+  }
+
+  /**
    * Reject student account with optional reason
    */
   static async rejectAccount(
@@ -1038,6 +1243,8 @@ export class FirebaseDatabaseService {
                 accessGranted: true,
                 isAdmin: accData.role === 'admin' || localProf?.isAdmin || false,
                 isTrial: false,
+                accessType: accData.accessType || localProf?.accessType || 'full',
+                pendingPromotionLevel: accData.pendingPromotionLevel !== undefined ? accData.pendingPromotionLevel : (localProf?.pendingPromotionLevel || null),
                 pretestCompleted: hasPretest,
                 startingLevel: assignedLvl,
                 currentLevel: accData.currentLevel || assignedLvl || '6A',

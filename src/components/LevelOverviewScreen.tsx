@@ -27,8 +27,10 @@ import {
   Sun,
   Moon,
   FolderDown,
-  FileText
+  FileText,
+  RefreshCw
 } from 'lucide-react';
+import { FirebaseDatabaseService } from '../services/firebaseSync';
 import { KumonLevelId, StudentProfile, LevelProgress, WorksheetSessionResult, UnlockedBadge, ReflectionJournalEntry } from '../types';
 import { KUMON_LEVEL_ORDER, KUMON_LEVELS } from '../data/curriculumData';
 import { PerformanceTrendChart } from './PerformanceTrendChart';
@@ -86,6 +88,39 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
   const refreshGamificationData = () => {
     setUnlockedBadges(getStoredBadges());
     setJournals(getStoredReflectionJournals());
+  };
+
+  const [isCheckingPromotion, setIsCheckingPromotion] = useState(false);
+  const [promotionCheckNotice, setPromotionCheckNotice] = useState<string | null>(null);
+
+  const handleCheckPromotionStatus = async () => {
+    if (!profile.username) return;
+    setIsCheckingPromotion(true);
+    setPromotionCheckNotice(null);
+    try {
+      const res = await FirebaseDatabaseService.checkAccountStatus(profile.username);
+      if (res.account) {
+        if (!res.account.pendingPromotionLevel && res.account.currentLevel !== profile.currentLevel) {
+          setPromotionCheckNotice(`Level ${res.account.currentLevel} telah disetujui Guru! Memuat ulang...`);
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+          return;
+        } else if (res.account.pendingPromotionLevel) {
+          setPromotionCheckNotice(`Level ${res.account.pendingPromotionLevel} masih menunggu persetujuan Guru di Panel Admin.`);
+          setTimeout(() => setPromotionCheckNotice(null), 4000);
+        } else {
+          setPromotionCheckNotice('Belum ada pembaruan status.');
+          setTimeout(() => setPromotionCheckNotice(null), 3000);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      setPromotionCheckNotice('Gagal memeriksa status. Periksa koneksi internet.');
+      setTimeout(() => setPromotionCheckNotice(null), 3000);
+    } finally {
+      setIsCheckingPromotion(false);
+    }
   };
 
   const categories = [
@@ -309,6 +344,46 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                 Ganti Akun
               </button>
             )}
+          </div>
+        )}
+
+        {/* Tiered Access: Pending Level Promotion Banner */}
+        {profile.accessType === 'tiered' && profile.pendingPromotionLevel && (
+          <div className="p-4 sm:p-5 clay-card bg-amber-50/95 dark:bg-amber-950/60 border-2 border-amber-400 dark:border-amber-700/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs shadow-md">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <strong className="text-sm font-black text-amber-950 dark:text-amber-100">
+                    Level {profile.lastStudiedLevel || profile.currentLevel} Selesai • Menunggu Approval Naik Level {profile.pendingPromotionLevel}
+                  </strong>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                    Akses Berjenjang
+                  </span>
+                </div>
+                <p className="text-amber-800 dark:text-amber-300 text-xs leading-relaxed">
+                  Selamat! Anda telah menuntaskan materi level sebelumnya. Karena akun Anda bertipe <strong>Akses Berjenjang</strong>, akses <strong>Level {profile.pendingPromotionLevel}</strong> sedang menunggu persetujuan (Approve) dari Guru di Panel Admin.
+                </p>
+                {promotionCheckNotice && (
+                  <p className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 pt-0.5 animate-fadeIn">
+                    {promotionCheckNotice}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={isCheckingPromotion}
+              onClick={handleCheckPromotionStatus}
+              className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap shrink-0 self-end sm:self-center disabled:opacity-50"
+              title="Periksa apakah Guru sudah menyetujui kenaikan level"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isCheckingPromotion ? 'animate-spin' : ''}`} />
+              <span>Cek Status Approval Guru</span>
+            </button>
           </div>
         )}
 
@@ -623,8 +698,17 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                     </div>
 
                     {!isUnlocked && (
-                      <div className="p-2.5 rounded-2xl clay-card-sm text-slate-400 dark:text-slate-500">
-                        <Lock className="w-4 h-4" />
+                      <div className="flex items-center gap-1.5">
+                        {profile.accessType === 'tiered' && profile.pendingPromotionLevel === lvlId ? (
+                          <span className="px-2.5 py-1 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-extrabold text-[10px] rounded-xl flex items-center gap-1 border border-amber-300 dark:border-amber-700 shadow-xs">
+                            <Clock className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Menunggu Approve Guru</span>
+                          </span>
+                        ) : (
+                          <div className="p-2.5 rounded-2xl clay-card-sm text-slate-400 dark:text-slate-500">
+                            <Lock className="w-4 h-4" />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -686,9 +770,22 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                       </div>
                     </>
                   ) : (
-                    <div className="py-3 text-center text-xs text-slate-400 dark:text-slate-500 font-bold clay-inset flex items-center justify-center gap-2 rounded-2xl">
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>{profile.isTrial ? 'Khusus Akun Penuh (Trial Terbatas)' : 'Kuasai level sebelumnya untuk membuka'}</span>
+                    <div className={`py-3 text-center text-xs font-bold clay-inset flex items-center justify-center gap-2 rounded-2xl ${
+                      profile.accessType === 'tiered' && profile.pendingPromotionLevel === lvlId
+                        ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300/60'
+                        : 'text-slate-400 dark:text-slate-500'
+                    }`}>
+                      {profile.accessType === 'tiered' && profile.pendingPromotionLevel === lvlId ? (
+                        <>
+                          <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                          <span>Menunggu Approve Guru (Akses Berjenjang)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>{profile.isTrial ? 'Khusus Akun Penuh (Trial Terbatas)' : 'Kuasai level sebelumnya untuk membuka'}</span>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

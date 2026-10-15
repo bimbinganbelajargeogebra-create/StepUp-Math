@@ -33,7 +33,9 @@ import {
   FolderUp,
   Paperclip,
   FileSpreadsheet,
-  Eye
+  Eye,
+  Zap,
+  Layers
 } from 'lucide-react';
 import { 
   KumonLevelId, 
@@ -41,6 +43,7 @@ import {
   LevelProgress, 
   UserAccount, 
   AccountStatus, 
+  AccessType,
   WorksheetSessionResult,
   UploadedFileItem,
   UploadedFileType
@@ -100,7 +103,8 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
   // User Accounts & Approval State
   const [accounts, setAccounts] = useState<UserAccount[]>([]);
   const [allSessions, setAllSessions] = useState<(WorksheetSessionResult & { studentName?: string; username?: string })[]>([]);
-  const [accountsFilter, setAccountsFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [accountsFilter, setAccountsFilter] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'promotions'>('all');
+  const [accessTypeFilter, setAccessTypeFilter] = useState<'all' | 'full' | 'tiered'>('all');
   const [accountsSearch, setAccountsSearch] = useState('');
   const [approvalLevelChoices, setApprovalLevelChoices] = useState<Record<string, KumonLevelId>>({});
   const [rejectModalAccount, setRejectModalAccount] = useState<UserAccount | null>(null);
@@ -264,6 +268,57 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
       const ok = await FirebaseDatabaseService.updateStudentLevel(username, newLevel, profile?.name || 'Pak GuruAI');
       if (ok) {
         setActionSuccessNotice(`Level siswa @${username} berhasil diubah ke Level ${newLevel}. Level terbuka telah dikalibrasi.`);
+        setTimeout(() => setActionSuccessNotice(null), 4000);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setProcessingUsername(null);
+    }
+  };
+
+  // Handle Update Access Type (Full Akses vs Akses Berjenjang)
+  const handleUpdateAccessType = async (username: string, newType: AccessType) => {
+    setProcessingUsername(username);
+    setActionSuccessNotice(null);
+    try {
+      const ok = await FirebaseDatabaseService.updateAccountAccessType(username, newType, profile?.name || 'Pak GuruAI');
+      if (ok) {
+        setActionSuccessNotice(`Tipe akses siswa @${username} berhasil diubah ke: ${newType === 'full' ? 'Full Akses (Otomatis Buka Level)' : 'Akses Berjenjang (Menunggu Approval)'}.`);
+        setTimeout(() => setActionSuccessNotice(null), 4000);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setProcessingUsername(null);
+    }
+  };
+
+  // Handle Approve Level Promotion
+  const handleApproveLevelPromotion = async (username: string, targetLevel: KumonLevelId) => {
+    setProcessingUsername(username);
+    setActionSuccessNotice(null);
+    try {
+      const ok = await FirebaseDatabaseService.approveLevelPromotion(username, targetLevel, profile?.name || 'Pak GuruAI');
+      if (ok) {
+        setActionSuccessNotice(`Kenaikan Level untuk @${username} ke Level ${targetLevel} telah DISETUJUI! Level ${targetLevel} kini telah terbuka.`);
+        setTimeout(() => setActionSuccessNotice(null), 5000);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setProcessingUsername(null);
+    }
+  };
+
+  // Handle Reject Level Promotion
+  const handleRejectLevelPromotion = async (username: string) => {
+    setProcessingUsername(username);
+    setActionSuccessNotice(null);
+    try {
+      const ok = await FirebaseDatabaseService.rejectLevelPromotion(username, profile?.name || 'Pak GuruAI');
+      if (ok) {
+        setActionSuccessNotice(`Permohonan kenaikan level @${username} telah dibatalkan (disarankan latihan pengulangan).`);
         setTimeout(() => setActionSuccessNotice(null), 4000);
       }
     } catch (e) {
@@ -478,14 +533,25 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
   };
 
   // Filter and search accounts
+  const promotionRequestsCount = accounts.filter(a => Boolean(a.pendingPromotionLevel)).length;
+
   const filteredAccounts = accounts.filter(acc => {
-    if (accountsFilter !== 'all' && acc.status !== accountsFilter) return false;
+    if (accountsFilter === 'promotions') {
+      if (!acc.pendingPromotionLevel) return false;
+    } else if (accountsFilter !== 'all' && acc.status !== accountsFilter) {
+      return false;
+    }
+    if (accessTypeFilter !== 'all') {
+      const type = acc.accessType || 'full';
+      if (type !== accessTypeFilter) return false;
+    }
     if (accountsSearch.trim()) {
       const q = accountsSearch.toLowerCase();
       const matchName = acc.name?.toLowerCase().includes(q);
       const matchUser = acc.username?.toLowerCase().includes(q);
       const matchSchool = acc.school?.toLowerCase().includes(q);
-      if (!matchName && !matchUser && !matchSchool) return false;
+      const matchLevel = acc.currentLevel?.toLowerCase().includes(q) || acc.pendingPromotionLevel?.toLowerCase().includes(q);
+      if (!matchName && !matchUser && !matchSchool && !matchLevel) return false;
     }
     return true;
   });
@@ -528,7 +594,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
               id: 'approvals', 
               label: 'Akun Siswa & Status Akun', 
               icon: Users,
-              badge: pendingCount > 0 ? pendingCount : null
+              badge: (pendingCount + promotionRequestsCount) > 0 ? (pendingCount + promotionRequestsCount) : null
             },
             {
               id: 'daily_progress',
@@ -600,34 +666,77 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
             <div className="space-y-4">
               
               {/* Header metrics card */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-[11px] font-bold text-slate-500 block uppercase">Total Terdaftar</span>
-                  <span className="text-xl font-black text-slate-900 dark:text-white">{accounts.length}</span>
+                  <span className="text-[10px] font-bold text-slate-500 block uppercase">Total Terdaftar</span>
+                  <span className="text-lg font-black text-slate-900 dark:text-white">{accounts.length}</span>
                 </div>
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800">
-                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 block uppercase">Menunggu (Pending)</span>
-                  <span className="text-xl font-black text-amber-600 dark:text-amber-400">{pendingCount}</span>
+                <div 
+                  onClick={() => setAccountsFilter('promotions')}
+                  className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                    promotionRequestsCount > 0 
+                      ? 'bg-amber-100/80 dark:bg-amber-950/60 border-amber-400 dark:border-amber-600 shadow-sm' 
+                      : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800'
+                  }`}
+                  title="Klik untuk melihat siswa berjenjang yang menunggu persetujuan naik level"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 block uppercase">Naik Level</span>
+                    {promotionRequestsCount > 0 && (
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                    )}
+                  </div>
+                  <span className="text-lg font-black text-amber-700 dark:text-amber-400">{promotionRequestsCount} Menunggu</span>
                 </div>
-                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800">
-                  <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 block uppercase">Disetujui (Approved)</span>
-                  <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
-                    {accounts.filter(a => a.status === 'approved').length}
+                <div 
+                  onClick={() => setAccountsFilter('pending')}
+                  className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800 cursor-pointer"
+                  title="Klik untuk melihat siswa baru yang menunggu approve registrasi"
+                >
+                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 block uppercase">Pending Akun</span>
+                  <span className="text-lg font-black text-amber-600 dark:text-amber-400">{pendingCount}</span>
+                </div>
+                <div 
+                  onClick={() => setAccessTypeFilter(accessTypeFilter === 'full' ? 'all' : 'full')}
+                  className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                    accessTypeFilter === 'full'
+                      ? 'bg-indigo-100/80 dark:bg-indigo-950/70 border-indigo-500 shadow-xs'
+                      : 'bg-indigo-50/60 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800'
+                  }`}
+                  title="Siswa dengan level berikutnya terbuka otomatis saat selesai"
+                >
+                  <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 block uppercase">⚡ Full Akses</span>
+                  <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">
+                    {accounts.filter(a => (a.accessType || 'full') === 'full').length}
                   </span>
                 </div>
-                <div className="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-2xl border border-rose-200 dark:border-rose-800">
-                  <span className="text-[11px] font-bold text-rose-700 dark:text-rose-300 block uppercase">Ditolak (Rejected)</span>
-                  <span className="text-xl font-black text-rose-600 dark:text-rose-400">
-                    {accounts.filter(a => a.status === 'rejected').length}
+                <div 
+                  onClick={() => setAccessTypeFilter(accessTypeFilter === 'tiered' ? 'all' : 'tiered')}
+                  className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                    accessTypeFilter === 'tiered'
+                      ? 'bg-amber-100/80 dark:bg-amber-950/70 border-amber-500 shadow-xs'
+                      : 'bg-amber-50/60 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+                  }`}
+                  title="Siswa yang memerlukan approval guru untuk naik ke level berikutnya"
+                >
+                  <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 block uppercase">🪜 Berjenjang</span>
+                  <span className="text-lg font-black text-amber-700 dark:text-amber-400">
+                    {accounts.filter(a => a.accessType === 'tiered').length}
                   </span>
                 </div>
               </div>
 
               {/* Filters & Search & Blanko Print */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 pt-1">
+                {/* Status Filter Tabs */}
                 <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs overflow-x-auto">
                   {[
                     { id: 'all', label: 'Semua' },
+                    { 
+                      id: 'promotions', 
+                      label: `Naik Level (${promotionRequestsCount})`,
+                      highlight: promotionRequestsCount > 0 
+                    },
                     { id: 'pending', label: `Pending (${pendingCount})` },
                     { id: 'approved', label: 'Disetujui' },
                     { id: 'rejected', label: 'Ditolak' }
@@ -636,19 +745,41 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                       key={f.id}
                       type="button"
                       onClick={() => setAccountsFilter(f.id as any)}
-                      className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         accountsFilter === f.id
-                          ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          ? f.id === 'promotions'
+                            ? 'bg-amber-500 text-white shadow-xs'
+                            : 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : f.highlight
+                          ? 'text-amber-700 dark:text-amber-300 font-extrabold bg-amber-100 dark:bg-amber-950/60'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                       }`}
                     >
-                      {f.label}
+                      {f.id === 'promotions' && f.highlight && (
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                      )}
+                      <span>{f.label}</span>
                     </button>
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1 sm:w-60">
+                {/* Access Type Filter + Search + Blanko Button */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Access Type Filter Dropdown */}
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                    <span className="text-[10px] font-bold text-slate-500">Tipe:</span>
+                    <select
+                      value={accessTypeFilter}
+                      onChange={(e) => setAccessTypeFilter(e.target.value as any)}
+                      className="text-xs font-bold bg-transparent text-slate-800 dark:text-slate-200 outline-none cursor-pointer"
+                    >
+                      <option value="all">Semua Tipe Akses</option>
+                      <option value="full">⚡ Full Akses (Otomatis)</option>
+                      <option value="tiered">🪜 Berjenjang (Approval)</option>
+                    </select>
+                  </div>
+
+                  <div className="relative flex-1 sm:w-52">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
@@ -711,7 +842,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                           </div>
 
                           <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-1.5">
                               <h4 className="font-bold text-sm text-slate-900 dark:text-white">{acc.name}</h4>
                               <span className="font-mono text-xs text-indigo-600 dark:text-indigo-400 font-semibold">
                                 @{acc.username}
@@ -734,6 +865,27 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                                 <span className="px-2 py-0.5 bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300 text-[10px] font-extrabold rounded-full flex items-center gap-1">
                                   <XCircle className="w-3 h-3" />
                                   Ditolak
+                                </span>
+                              )}
+
+                              {/* Access Type Badge */}
+                              {acc.accessType === 'tiered' ? (
+                                <span className="px-2 py-0.5 bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 text-[10px] font-black rounded-full flex items-center gap-1 border border-amber-300 dark:border-amber-700" title="Akses Berjenjang: Level berikutnya memerlukan approval guru">
+                                  <Layers className="w-3 h-3 text-amber-600" />
+                                  Berjenjang
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-900 dark:bg-indigo-950/80 dark:text-indigo-300 text-[10px] font-black rounded-full flex items-center gap-1 border border-indigo-200 dark:border-indigo-800" title="Full Akses: Level berikutnya terbuka otomatis saat level selesai dikerjakan">
+                                  <Zap className="w-3 h-3 text-indigo-600" />
+                                  Full Akses
+                                </span>
+                              )}
+
+                              {/* Pending Promotion Alert Badge */}
+                              {acc.pendingPromotionLevel && (
+                                <span className="px-2 py-0.5 bg-amber-500 text-white text-[10px] font-black rounded-full flex items-center gap-1 animate-pulse shadow-xs">
+                                  <Sparkles className="w-3 h-3" />
+                                  Menunggu Naik Level {acc.pendingPromotionLevel}
                                 </span>
                               )}
                             </div>
@@ -771,11 +923,68 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                                 Alasan Ditolak: "{acc.rejectionReason}"
                               </p>
                             )}
+
+                            {/* PENDING PROMOTION ACTION BOX (FOR TIERED ACCESS) */}
+                            {acc.pendingPromotionLevel && (
+                              <div className="mt-2.5 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400/80 dark:border-amber-600/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                                <div className="flex items-start gap-2.5">
+                                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                                    <Sparkles className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <p className="font-extrabold text-xs text-amber-950 dark:text-amber-100">
+                                      Permohonan Naik Level: <span className="underline decoration-amber-500 decoration-2 font-black">Level {acc.pendingPromotionLevel}</span>
+                                    </p>
+                                    <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-snug">
+                                      Siswa telah menuntaskan lembar kerja Level {acc.lastStudiedLevel || acc.currentLevel}. Karena akun <strong>Akses Berjenjang</strong>, pembukaan level memerlukan persetujuan Guru.
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                                  <button
+                                    type="button"
+                                    disabled={isProcessing}
+                                    onClick={() => handleApproveLevelPromotion(acc.username, acc.pendingPromotionLevel!)}
+                                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                                    title={`Setujui kenaikan ke Level ${acc.pendingPromotionLevel} untuk ${acc.name}`}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>Setujui Naik Level {acc.pendingPromotionLevel}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={isProcessing}
+                                    onClick={() => handleRejectLevelPromotion(acc.username)}
+                                    className="px-2.5 py-1.5 bg-slate-200 hover:bg-rose-100 text-slate-700 hover:text-rose-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-rose-950/60 font-bold text-xs rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                                    title="Tolak dan minta siswa mengulang latihan lembar kerja pada level saat ini"
+                                  >
+                                    Tolak
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {/* Action Buttons: APPROVE & REJECT */}
+                        {/* Action Buttons & Access Type Controls */}
                         <div className="flex flex-wrap items-center gap-1.5 self-end sm:self-center shrink-0">
+                          {/* Access Type Switcher (Admin Control) */}
+                          <div 
+                            className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs" 
+                            title="Atur Tipe Akses Siswa: Full Akses (level berikutnya otomatis terbuka) atau Berjenjang (menunggu approve admin untuk naik level)"
+                          >
+                            <span className="text-[10px] font-extrabold text-slate-500 pl-1 uppercase">Akses:</span>
+                            <select
+                              disabled={isProcessing}
+                              value={acc.accessType || 'full'}
+                              onChange={(e) => handleUpdateAccessType(acc.username, e.target.value as AccessType)}
+                              className="text-xs font-bold bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 border border-slate-200 dark:border-slate-700 outline-none cursor-pointer"
+                            >
+                              <option value="full">⚡ Full Akses</option>
+                              <option value="tiered">🪜 Berjenjang</option>
+                            </select>
+                          </div>
+
                           {isPending && (
                             <>
                               <button
