@@ -207,3 +207,22 @@ export interface PretestResult {
   breakdown: Record<string, { total: number; correct: number }>;
   studentName: string;
 }
+
+export type UploadedFileType = 'pdf' | 'image' | 'doc' | 'worksheet' | 'link';
+
+export interface UploadedFileItem {
+  id: string;
+  title: string;
+  description?: string;
+  fileName: string;
+  fileType: UploadedFileType;
+  fileDataUrl?: string; // base64 or link
+  fileSize?: string;
+  targetLevel: KumonLevelId | 'ALL';
+  targetWorksheetNum?: number;
+  uploadedBy: string; // 'Pak GuruAI' or student's username
+  uploaderRole: 'admin' | 'student';
+  uploadedAt: number;
+  tags?: string[];
+}
+

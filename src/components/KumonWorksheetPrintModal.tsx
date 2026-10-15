@@ -19,9 +19,10 @@ import {
   KeyRound,
   AlertCircle,
   GraduationCap,
-  ListOrdered
+  ListOrdered,
+  Target
 } from 'lucide-react';
-import { KumonLevelId, Question } from '../types';
+import { KumonLevelId, Question, StudentProfile } from '../types';
 import { KUMON_LEVEL_ORDER, KUMON_LEVELS } from '../data/curriculumData';
 import { generateWorksheetQuestions } from '../utils/mathGenerators';
 import { verifyAdminPassword } from '../utils/storage';
@@ -36,22 +37,26 @@ interface KumonWorksheetPrintModalProps {
   initialMode?: WorksheetPrintMode;
   isAdmin?: boolean;
   studentCurrentLevel?: KumonLevelId;
+  studentProfile?: StudentProfile | null;
   unlockedLevels?: KumonLevelId[];
   onClose: () => void;
 }
 
 export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> = ({
-  initialLevelId = 'E',
+  initialLevelId,
   initialWorksheetNum = 1,
   initialMode = 'questions_only',
   isAdmin = false,
   studentCurrentLevel,
+  studentProfile,
   unlockedLevels,
   onClose
 }) => {
   // Determine allowed levels for the user:
   // Admin gets all 18 levels. Students get only their current level or unlocked levels.
-  const studentEffectiveLevel: KumonLevelId = studentCurrentLevel || initialLevelId || '6A';
+  const fallbackLevel = studentProfile?.lastStudiedLevel || studentProfile?.currentLevel || studentProfile?.startingLevel || studentCurrentLevel || '6A';
+  const effectiveInitialLevel = initialLevelId || fallbackLevel;
+  const studentEffectiveLevel: KumonLevelId = studentCurrentLevel || fallbackLevel;
   
   const availableLevels: KumonLevelId[] = useMemo(() => {
     if (isAdmin) {
@@ -68,10 +73,10 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
 
   // Initial chosen level must be within available levels for students
   const resolvedInitialLevel: KumonLevelId = useMemo(() => {
-    if (isAdmin) return initialLevelId;
-    if (availableLevels.includes(initialLevelId)) return initialLevelId;
+    if (isAdmin) return effectiveInitialLevel;
+    if (availableLevels.includes(effectiveInitialLevel)) return effectiveInitialLevel;
     return studentEffectiveLevel;
-  }, [isAdmin, availableLevels, initialLevelId, studentEffectiveLevel]);
+  }, [isAdmin, availableLevels, effectiveInitialLevel, studentEffectiveLevel]);
 
   const [isAuthorized, setIsAuthorized] = useState<boolean>(true);
   const [adminPassInput, setAdminPassInput] = useState<string>('');
@@ -332,18 +337,33 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
               className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-white font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               {isAdmin && <option value="ALL">★ Semua 18 Level (6A – M)</option>}
-              {availableLevels.map((lvl) => (
-                <option key={lvl} value={lvl}>
-                  Level {lvl} - {KUMON_LEVELS[lvl].name}
-                </option>
-              ))}
+              {availableLevels.map((lvl) => {
+                const isDiag = studentProfile?.startingLevel === lvl;
+                const isLast = (studentProfile?.lastStudiedLevel || studentEffectiveLevel) === lvl;
+                const tag = isDiag && isLast ? ' ★ (Diagnostik & Belajar Terakhir)' : isDiag ? ' 🎯 (Hasil Diagnostik)' : isLast ? ' 📖 (Belajar Terakhir)' : '';
+                return (
+                  <option key={lvl} value={lvl}>
+                    Level {lvl} - {KUMON_LEVELS[lvl].name}{tag}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
           {!isAdmin && (
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-indigo-950/60 border border-indigo-700/50 rounded-lg text-[11px] text-indigo-300 font-bold">
-              <span>Sesuai Level Siswa:</span>
-              <span className="text-amber-300 font-black">Level {studentEffectiveLevel}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {studentProfile?.startingLevel && (
+                <div className="flex items-center gap-1 px-2.5 py-1 bg-indigo-950/60 border border-indigo-700/50 rounded-lg text-[11px] text-indigo-300 font-bold">
+                  <Target className="w-3 h-3 text-indigo-400" />
+                  <span>Diagnostik:</span>
+                  <span className="text-white font-black">Level {studentProfile.startingLevel}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-950/60 border border-amber-700/50 rounded-lg text-[11px] text-amber-300 font-bold">
+                <BookOpen className="w-3 h-3 text-amber-400" />
+                <span>Belajar Terakhir:</span>
+                <span className="text-amber-200 font-black">Level {studentEffectiveLevel}</span>
+              </div>
             </div>
           )}
 
@@ -476,11 +496,29 @@ export const KumonWorksheetPrintModal: React.FC<KumonWorksheetPrintModalProps> =
                     <div className="p-2 space-y-1.5 bg-white text-[11px]">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-slate-800 font-bold">Nama:</span>
-                        <span className="border-b border-black w-36 inline-block"></span>
+                        <span className="font-bold text-black border-b border-black w-36 inline-block text-left truncate">
+                          {studentProfile?.name || ''}
+                        </span>
+                      </div>
+                      {studentProfile?.startingLevel && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-slate-800 font-bold text-[10px]">Level Diagnostik:</span>
+                          <span className="font-black text-black text-[10px] bg-slate-100 px-1.5 py-0.2 rounded-xs border border-slate-300">
+                            Level {studentProfile.startingLevel}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-slate-800 font-bold text-[10px]">Belajar Terakhir:</span>
+                        <span className="font-bold text-black text-[10px]">
+                          Level {studentProfile?.lastStudiedLevel || studentProfile?.currentLevel || sheet.levelId} #{studentProfile?.lastStudiedWorksheet || sheet.worksheetNum}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-slate-800 font-bold">Tanggal:</span>
-                        <span className="border-b border-black w-36 inline-block"></span>
+                        <span className="font-mono text-black border-b border-black w-36 inline-block text-left text-[10px]">
+                          {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-slate-800 font-bold">Waktu:</span>

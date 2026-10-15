@@ -29,9 +29,22 @@ import {
   Building2,
   TrendingUp,
   BarChart3,
-  Target
+  Target,
+  FolderUp,
+  Paperclip,
+  FileSpreadsheet,
+  Eye
 } from 'lucide-react';
-import { KumonLevelId, StudentProfile, LevelProgress, UserAccount, AccountStatus, WorksheetSessionResult } from '../types';
+import { 
+  KumonLevelId, 
+  StudentProfile, 
+  LevelProgress, 
+  UserAccount, 
+  AccountStatus, 
+  WorksheetSessionResult,
+  UploadedFileItem,
+  UploadedFileType
+} from '../types';
 import { KUMON_LEVEL_ORDER, KUMON_LEVELS } from '../data/curriculumData';
 import { 
   ACCESS_CODE, 
@@ -68,7 +81,7 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
   onOpenPrintWorksheets,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'approvals' | 'daily_progress' | 'levels' | 'backup' | 'info'>('approvals');
+  const [activeTab, setActiveTab] = useState<'approvals' | 'daily_progress' | 'levels' | 'files' | 'backup' | 'info'>('approvals');
   const [importText, setImportText] = useState('');
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -94,7 +107,25 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
   const [actionSuccessNotice, setActionSuccessNotice] = useState<string | null>(null);
   const [processingUsername, setProcessingUsername] = useState<string | null>(null);
 
-  // Real-time listener for registered accounts and all sessions in Firebase Firestore
+  // Uploaded Files State
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFileItem[]>([]);
+  const [filesFilterLevel, setFilesFilterLevel] = useState<KumonLevelId | 'ALL'>('ALL');
+  const [filesSearch, setFilesSearch] = useState('');
+  const [newFileTitle, setNewFileTitle] = useState('');
+  const [newFileDesc, setNewFileDesc] = useState('');
+  const [newFileLevel, setNewFileLevel] = useState<KumonLevelId | 'ALL'>('ALL');
+  const [newFileWorksheetNum, setNewFileWorksheetNum] = useState<string>('all');
+  const [newFileType, setNewFileType] = useState<UploadedFileType>('pdf');
+  const [newFileTags, setNewFileTags] = useState('');
+  const [selectedLocalFile, setSelectedLocalFile] = useState<{
+    name: string;
+    size: string;
+    dataUrl?: string;
+  } | null>(null);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [fileActionNotice, setFileActionNotice] = useState<string | null>(null);
+
+  // Real-time listener for accounts, sessions, and uploaded files in Firebase Firestore
   useEffect(() => {
     const unsubAccounts = FirebaseDatabaseService.subscribeToAccounts((fetchedAccounts) => {
       setAccounts(fetchedAccounts);
@@ -104,11 +135,101 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
       setAllSessions(fetchedSessions);
     });
 
+    const unsubFiles = FirebaseDatabaseService.subscribeToUploadedFiles((fetchedFiles) => {
+      setUploadedFiles(fetchedFiles);
+    });
+
     return () => {
       if (unsubAccounts) unsubAccounts();
       if (unsubSessions) unsubSessions();
+      if (unsubFiles) unsubFiles();
     };
   }, []);
+
+  // Handle local file selection for upload
+  const handleTeacherFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    let fType: UploadedFileType = 'doc';
+    if (file.type.includes('pdf')) fType = 'pdf';
+    else if (file.type.startsWith('image/')) fType = 'image';
+
+    const sizeFormatted = file.size > 1024 * 1024
+      ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+      : Math.round(file.size / 1024) + ' KB';
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedLocalFile({
+        name: file.name,
+        size: sizeFormatted,
+        dataUrl: reader.result as string
+      });
+      setNewFileType(fType);
+      if (!newFileTitle) {
+        setNewFileTitle(file.name.replace(/\.[^/.]+$/, ''));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle file creation and uploading
+  const handleCreateUploadedFile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFileTitle.trim() && !selectedLocalFile) return;
+
+    setIsUploadingFile(true);
+    setFileActionNotice(null);
+
+    try {
+      const generatedId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      const cleanLevel = newFileLevel;
+      const targetWs = newFileWorksheetNum === 'all' ? undefined : parseInt(newFileWorksheetNum, 10);
+
+      const newFileItem: UploadedFileItem = {
+        id: generatedId,
+        title: newFileTitle.trim() || selectedLocalFile?.name || `Materi Level ${cleanLevel}`,
+        description: newFileDesc.trim() || undefined,
+        fileName: selectedLocalFile?.name || `Modul-Matematika-Level-${cleanLevel}.pdf`,
+        fileType: newFileType,
+        fileDataUrl: selectedLocalFile?.dataUrl,
+        fileSize: selectedLocalFile?.size || '480 KB',
+        targetLevel: cleanLevel,
+        targetWorksheetNum: targetWs,
+        uploadedBy: profile?.name || 'Pak GuruAI',
+        uploaderRole: 'admin',
+        uploadedAt: Date.now(),
+        tags: newFileTags ? newFileTags.split(',').map(t => t.trim()).filter(Boolean) : [`Level ${cleanLevel}`]
+      };
+
+      await FirebaseDatabaseService.uploadFileItem(newFileItem);
+
+      setFileActionNotice(`File "${newFileItem.title}" berhasil diunggah! File ini otomatis muncul pada siswa dengan Level Diagnostik atau Belajar Terakhir: ${cleanLevel === 'ALL' ? 'Semua Level' : `Level ${cleanLevel}`}.`);
+      setNewFileTitle('');
+      setNewFileDesc('');
+      setNewFileTags('');
+      setSelectedLocalFile(null);
+      setTimeout(() => setFileActionNotice(null), 5000);
+    } catch (err) {
+      console.error('File upload error:', err);
+      setFileActionNotice('Gagal mengunggah file. Silakan periksa koneksi.');
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  // Handle deleting uploaded file
+  const handleDeleteUploadedFile = async (fileId: string, fileTitle: string) => {
+    if (!window.confirm(`Hapus file "${fileTitle}"? File tidak akan lagi tampil di akun siswa.`)) return;
+    try {
+      await FirebaseDatabaseService.deleteFileItem(fileId);
+      setFileActionNotice(`File "${fileTitle}" berhasil dihapus.`);
+      setTimeout(() => setFileActionNotice(null), 4000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const pendingCount = accounts.filter(a => a.status === 'pending').length;
 
@@ -411,6 +532,12 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
               badge: accounts.length > 0 ? accounts.length : null
             },
             { id: 'levels', label: 'Buka / Kunci 18 Level', icon: Unlock },
+            { 
+              id: 'files', 
+              label: 'Unggah File Materi', 
+              icon: FolderUp,
+              badge: uploadedFiles.length > 0 ? uploadedFiles.length : null 
+            },
             { id: 'backup', label: 'Sinkronisasi & Cadangan', icon: Database },
             { id: 'info', label: 'Kode Akses & Info', icon: KeyRound }
           ].map((tab) => {
@@ -844,6 +971,297 @@ export const TeacherAdminModal: React.FC<TeacherAdminModalProps> = ({
                 >
                   Ulangi Pretest
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: UNGGAH & KELOLA FILE MATERI SISWA */}
+          {activeTab === 'files' && (
+            <div className="space-y-4">
+              {/* Context Banner */}
+              <div className="p-4 bg-linear-to-r from-indigo-900 to-slate-900 text-white rounded-2xl border border-indigo-700/60 shadow-md space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600/80 flex items-center justify-center text-amber-300 shrink-0">
+                    <FolderUp className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white">Unggah File Materi &amp; Lembar Kerja Siswa</h4>
+                    <p className="text-xs text-indigo-200">
+                      File yang diunggah akan otomatis muncul di akun siswa sesuai hasil <strong>Tes Diagnostik</strong> dan <strong>Level Belajar Terakhirnya</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action notice */}
+              {fileActionNotice && (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-2xl text-emerald-900 dark:text-emerald-200 text-xs sm:text-sm flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="font-semibold">{fileActionNotice}</span>
+                </div>
+              )}
+
+              {/* Upload Form Box */}
+              <form onSubmit={handleCreateUploadedFile} className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                  <h5 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                    Form Unggah File Materi Baru
+                  </h5>
+                  <span className="text-[10px] text-slate-500 font-semibold">
+                    Format didukung: PDF, Dokumen, Gambar, Lembar Kerja
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* File Title */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Judul File / Materi <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newFileTitle}
+                      onChange={(e) => setNewFileTitle(e.target.value)}
+                      placeholder="Contoh: Modul Penguasaan Porogapit Level D"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  {/* Target Level */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Target Level Siswa <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={newFileLevel}
+                      onChange={(e) => setNewFileLevel(e.target.value as any)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    >
+                      <option value="ALL">Semua Level (Panduan Umum)</option>
+                      {KUMON_LEVEL_ORDER.map(lvl => (
+                        <option key={lvl} value={lvl}>Level {lvl} ({KUMON_LEVELS[lvl].name})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* File Picker */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Pilih Dokumen / File (PDF, Gambar, Word)
+                    </label>
+                    <input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.txt"
+                      onChange={handleTeacherFileSelect}
+                      className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Target Worksheet Num */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Target Lembar Kerja
+                    </label>
+                    <select
+                      value={newFileWorksheetNum}
+                      onChange={(e) => setNewFileWorksheetNum(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    >
+                      <option value="all">Semua Lembar (1–10)</option>
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <option key={i + 1} value={String(i + 1)}>Lembar #{i + 1}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Description & Tags */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Deskripsi / Catatan Tambahan untuk Siswa
+                    </label>
+                    <input
+                      type="text"
+                      value={newFileDesc}
+                      onChange={(e) => setNewFileDesc(e.target.value)}
+                      placeholder="Petunjuk pengerjaan atau materi pengayaan khusus..."
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Label / Tag (Pisahkan koma)
+                    </label>
+                    <input
+                      type="text"
+                      value={newFileTags}
+                      onChange={(e) => setNewFileTags(e.target.value)}
+                      placeholder="Rumus, Latihan, Pengayaan"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Student Matching Preview */}
+                <div className="p-3 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 rounded-xl flex items-start gap-2.5 text-xs text-indigo-900 dark:text-indigo-200">
+                  <Target className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-bold">Kecocokan Siswa Otomatis:</strong>
+                    <span>
+                      {newFileLevel === 'ALL'
+                        ? 'File ini akan muncul untuk SEMUA siswa terdaftar di seluruh level.'
+                        : (() => {
+                            const matchingAccs = accounts.filter(
+                              a => a.startingLevel === newFileLevel || a.currentLevel === newFileLevel || a.lastStudiedLevel === newFileLevel
+                            );
+                            if (matchingAccs.length === 0) {
+                              return `File Level ${newFileLevel} akan otomatis tampil begitu ada siswa yang mendapatkan Level ${newFileLevel} saat tes diagnostik atau belajar di level ini.`;
+                            }
+                            return `File ini akan otomatis tampil untuk ${matchingAccs.length} siswa saat ini: ${matchingAccs.map(a => `${a.name} (@${a.username})`).join(', ')}.`;
+                          })()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="submit"
+                    disabled={isUploadingFile || (!newFileTitle.trim() && !selectedLocalFile)}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{isUploadingFile ? 'Menyimpan ke Cloud...' : 'Unggah File ke Siswa'}</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Uploaded Files Table & Management */}
+              <div className="space-y-3 pt-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-1 sm:pb-0">
+                    <span className="font-bold text-slate-500 mr-1">Filter Level:</span>
+                    <select
+                      value={filesFilterLevel}
+                      onChange={(e) => setFilesFilterLevel(e.target.value as any)}
+                      className="px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-pointer"
+                    >
+                      <option value="ALL">Semua Level ({uploadedFiles.length})</option>
+                      {KUMON_LEVEL_ORDER.map(lvl => {
+                        const count = uploadedFiles.filter(f => f.targetLevel === lvl).length;
+                        return (
+                          <option key={lvl} value={lvl}>Level {lvl} ({count})</option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  <div className="relative flex-1 max-w-xs">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={filesSearch}
+                      onChange={(e) => setFilesSearch(e.target.value)}
+                      placeholder="Cari file, judul, tag..."
+                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Files List */}
+                <div className="space-y-2">
+                  {uploadedFiles
+                    .filter(f => {
+                      if (filesFilterLevel !== 'ALL' && f.targetLevel !== filesFilterLevel) return false;
+                      if (filesSearch.trim()) {
+                        const q = filesSearch.toLowerCase();
+                        return f.title.toLowerCase().includes(q) ||
+                               (f.description && f.description.toLowerCase().includes(q)) ||
+                               f.fileName.toLowerCase().includes(q) ||
+                               (f.tags && f.tags.some(t => t.toLowerCase().includes(q)));
+                      }
+                      return true;
+                    })
+                    .map((file) => {
+                      const matchingStudents = accounts.filter(
+                        a => a.startingLevel === file.targetLevel || a.currentLevel === file.targetLevel || a.lastStudiedLevel === file.targetLevel
+                      );
+
+                      return (
+                        <div
+                          key={file.id}
+                          className="p-3.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center shrink-0 text-indigo-600 mt-0.5">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
+                                  {file.title}
+                                </h5>
+                                <span className={`px-2 py-0.2 rounded-md text-[10px] font-black uppercase ${
+                                  file.targetLevel === 'ALL'
+                                    ? 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                                    : 'bg-indigo-600 text-white'
+                                }`}>
+                                  {file.targetLevel === 'ALL' ? 'Semua Level' : `Level ${file.targetLevel}`}
+                                </span>
+                                {file.uploaderRole === 'student' && (
+                                  <span className="px-1.5 py-0.2 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold">
+                                    Dari Siswa: {file.uploadedBy}
+                                  </span>
+                                )}
+                              </div>
+
+                              {file.description && (
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                                  {file.description}
+                                </p>
+                              )}
+
+                              <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
+                                <span>File: <strong className="text-slate-600 dark:text-slate-300 font-mono">{file.fileName}</strong> ({file.fileSize || 'PDF'})</span>
+                                <span>&bull;</span>
+                                <span>Target: {file.targetLevel === 'ALL' ? 'Seluruh Siswa' : `Siswa Level ${file.targetLevel} (${matchingStudents.length} siswa)`}</span>
+                                <span>&bull;</span>
+                                <span>{new Date(file.uploadedAt).toLocaleDateString('id-ID')}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                            {onOpenPrintWorksheets && file.targetLevel !== 'ALL' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onClose();
+                                  onOpenPrintWorksheets(file.targetLevel as KumonLevelId);
+                                }}
+                                className="px-2.5 py-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 rounded-lg"
+                                title="Buka cetak lembar kerja level ini"
+                              >
+                                Buka Lembar
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUploadedFile(file.id, file.title)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                              title="Hapus File"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
             </div>
           )}

@@ -391,8 +391,8 @@ export default function App() {
               onOpenPrint={(levelId, worksheetNum) => {
                 setPrintModalState({
                   isOpen: true,
-                  levelId: levelId || 'E',
-                  worksheetNum: worksheetNum || 1
+                  levelId: levelId || profile?.lastStudiedLevel || profile?.currentLevel || profile?.startingLevel || '6A',
+                  worksheetNum: worksheetNum || profile?.lastStudiedWorksheet || 1
                 });
               }}
               onOpenHome={() => {
@@ -475,10 +475,11 @@ export default function App() {
       {/* Worksheet PDF Print Modal */}
       {printModalState.isOpen && (
         <KumonWorksheetPrintModal
-          initialLevelId={printModalState.levelId || profile?.currentLevel || 'E'}
-          initialWorksheetNum={printModalState.worksheetNum || 1}
+          initialLevelId={printModalState.levelId || profile?.lastStudiedLevel || profile?.currentLevel || profile?.startingLevel || '6A'}
+          initialWorksheetNum={printModalState.worksheetNum || profile?.lastStudiedWorksheet || 1}
           isAdmin={profile?.isAdmin || false}
-          studentCurrentLevel={profile?.currentLevel || profile?.startingLevel || '6A'}
+          studentProfile={profile}
+          studentCurrentLevel={profile?.lastStudiedLevel || profile?.currentLevel || profile?.startingLevel || '6A'}
           unlockedLevels={
             profile?.isAdmin
               ? undefined

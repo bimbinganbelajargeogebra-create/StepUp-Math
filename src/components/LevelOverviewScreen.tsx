@@ -25,7 +25,9 @@ import {
   Zap,
   Info,
   Sun,
-  Moon
+  Moon,
+  FolderDown,
+  FileText
 } from 'lucide-react';
 import { KumonLevelId, StudentProfile, LevelProgress, WorksheetSessionResult, UnlockedBadge, ReflectionJournalEntry } from '../types';
 import { KUMON_LEVEL_ORDER, KUMON_LEVELS } from '../data/curriculumData';
@@ -36,6 +38,7 @@ import { MathLogo } from './MathLogo';
 import { StudyStreakTracker } from './StudyStreakTracker';
 import { BadgeShowcaseModal } from './BadgeShowcaseModal';
 import { ReflectionJournalModal } from './ReflectionJournalModal';
+import { StudentFilesModal } from './StudentFilesModal';
 import { BADGE_DEFINITIONS } from '../data/badgesData';
 
 interface LevelOverviewScreenProps {
@@ -77,6 +80,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
   const [isJournalsModalOpen, setIsJournalsModalOpen] = useState(false);
   const [unlockedBadges, setUnlockedBadges] = useState<UnlockedBadge[]>(() => getStoredBadges());
   const [journals, setJournals] = useState<ReflectionJournalEntry[]>(() => getStoredReflectionJournals());
+  const [isFilesModalOpen, setIsFilesModalOpen] = useState(false);
 
   // Keep badges and journals synced
   const refreshGamificationData = () => {
@@ -193,17 +197,30 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
               </button>
             )}
 
+            {/* Student Learning Materials & Uploaded Files */}
+            <button
+              id="open-student-files-btn"
+              type="button"
+              onClick={() => setIsFilesModalOpen(true)}
+              className="clay-btn clay-btn-primary items-center gap-1.5 px-3.5 py-2 text-xs font-bold"
+              title="File & Materi Pembelajaran (Sesuai Hasil Diagnostik & Level Belajar Terakhir Anda)"
+            >
+              <FolderDown className="w-3.5 h-3.5 text-emerald-300" />
+              <span className="hidden md:inline">File &amp; Materi Pembelajaran</span>
+              <span className="md:hidden">File</span>
+            </button>
+
             {/* Quick Print & Download PDF / HTML Button */}
             {onOpenPrint && (
               <button
                 id="quick-print-worksheets-button"
                 type="button"
-                onClick={() => onOpenPrint()}
-                className="clay-btn clay-btn-primary items-center gap-1.5 px-3.5 py-2 text-xs font-bold"
-                title="Cetak & Unduh Lembar Kerja (Pilihan: Soal Saja, Kunci Jawaban, atau Pembahasan Lengkap)"
+                onClick={() => onOpenPrint(lastStudiedLvl, lastStudiedWs)}
+                className="clay-btn clay-btn-secondary items-center gap-1.5 px-3.5 py-2 text-xs font-bold"
+                title={`Cetak & Unduh Lembar Kerja (Level ${lastStudiedLvl} #${lastStudiedWs})`}
               >
-                <Printer className="w-3.5 h-3.5 text-amber-300" />
-                <span className="hidden sm:inline">Unduh / Cetak Soal &amp; Pembahasan</span>
+                <Printer className="w-3.5 h-3.5 text-amber-500" />
+                <span className="hidden sm:inline">Cetak Soal &amp; Pembahasan</span>
                 <span className="sm:hidden">Cetak</span>
               </button>
             )}
@@ -368,7 +385,17 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsFilesModalOpen(true)}
+                className="clay-btn clay-btn-secondary px-4 py-3.5 text-xs font-bold gap-1.5 rounded-[22px] justify-center"
+                title="Buka File & Modul Materi Sesuai Level Ini"
+              >
+                <FolderDown className="w-4 h-4 text-emerald-400" />
+                <span>File Materi</span>
+              </button>
+
               <button
                 id="resume-last-learning-button"
                 type="button"
@@ -379,7 +406,7 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
                   }
                   onSelectWorksheet(nextTargetLevel, nextTargetWorksheet);
                 }}
-                className="w-full sm:w-auto clay-btn clay-btn-amber px-6 py-4 text-sm font-black gap-2 rounded-[22px]"
+                className="w-full sm:w-auto clay-btn clay-btn-amber px-6 py-4 text-sm font-black gap-2 rounded-[22px] justify-center"
               >
                 <Play className="w-4 h-4 fill-amber-950" />
                 <span>Lanjutkan Belajar (Level {nextTargetLevel} #{nextTargetWorksheet})</span>
@@ -717,6 +744,16 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsFilesModalOpen(true)}
+                  className="clay-btn clay-btn-secondary px-3.5 py-2 text-xs font-bold gap-1.5 rounded-2xl"
+                  title="Lihat File & Modul Pembelajaran Siswa"
+                >
+                  <FolderDown className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>File Materi</span>
+                </button>
+
                 {onOpenPrint && (
                   <button
                     type="button"
@@ -901,6 +938,16 @@ export const LevelOverviewScreen: React.FC<LevelOverviewScreenProps> = ({
             setIsJournalsModalOpen(false);
             refreshGamificationData();
           }}
+        />
+      )}
+
+      {/* Student Files & Learning Materials Modal */}
+      {isFilesModalOpen && (
+        <StudentFilesModal
+          profile={profile}
+          onOpenPrint={onOpenPrint}
+          onSelectWorksheet={onSelectWorksheet}
+          onClose={() => setIsFilesModalOpen(false)}
         />
       )}
     </div>

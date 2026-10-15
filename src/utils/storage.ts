@@ -7,7 +7,8 @@ import {
   UserAccount,
   UnlockedBadge,
   BadgeDefinition,
-  ReflectionJournalEntry
+  ReflectionJournalEntry,
+  UploadedFileItem
 } from '../types';
 import { KUMON_LEVEL_ORDER } from '../data/curriculumData';
 import { BADGE_DEFINITIONS, evaluateAllBadges } from '../data/badgesData';
@@ -22,8 +23,10 @@ export const STORAGE_KEYS = {
   ACCOUNTS_CACHE: 'algorimath_registered_accounts',
   THEME: 'algorimath_theme',
   BADGES: 'algorimath_student_badges',
-  JOURNALS: 'algorimath_reflection_journals'
+  JOURNALS: 'algorimath_reflection_journals',
+  UPLOADED_FILES: 'algorimath_uploaded_files'
 };
+
 
 export const LEGACY_STORAGE_KEYS = {
   PROFILE: 'stepup_math_student_profile',
@@ -827,4 +830,347 @@ export function upsertStoredAccount(account: Partial<UserAccount> & { id?: strin
     console.error('Failed to upsert stored account', e);
   }
 }
+
+// ----------------------------------------------------
+// UPLOADED FILES & LEARNING MATERIALS SYSTEM
+// ----------------------------------------------------
+
+export const DEFAULT_CURRICULUM_FILES: UploadedFileItem[] = [
+  {
+    id: 'file-modul-6a',
+    title: 'Modul Visual Pengenalan Angka & Menghitung Objek',
+    description: 'Panduan gambar objek (titik, apel, bintang) untuk melatih daya ingat angka 1–10 secara visual dan menyenangkan.',
+    fileName: 'Modul-Visual-Angka-Level-6A.pdf',
+    fileType: 'pdf',
+    targetLevel: '6A',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 7,
+    tags: ['Pra-Sekolah', 'Visual Objek', 'Angka Dasar']
+  },
+  {
+    id: 'file-modul-5a',
+    title: 'Lembar Latihan Menghubungkan Titik & Garis Angka',
+    description: 'Lembar kerja pembiasaan urutan bilangan 1 sampai 50 dengan panduan visual dan titik-titik bantu.',
+    fileName: 'Lembar-Latihan-Urutan-Angka-Level-5A.pdf',
+    fileType: 'pdf',
+    targetLevel: '5A',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 6,
+    tags: ['Urutan Bilangan', 'Menulis Angka', '5A']
+  },
+  {
+    id: 'file-modul-4a',
+    title: 'Modul Baca Bilangan & Penulisan Angka Mandiri',
+    description: 'Bahan bacaan dan latihan menulis lambang bilangan 1 sampai 100 dengan akurat dan rapi.',
+    fileName: 'Modul-Baca-Tulis-Bilangan-Level-4A.pdf',
+    fileType: 'pdf',
+    targetLevel: '4A',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 6,
+    tags: ['Angka 1-100', 'Konsistensi', '4A']
+  },
+  {
+    id: 'file-modul-3a',
+    title: 'Panduan Cepat Konsep Tambah 1 hingga Tambah 3',
+    description: 'Trik mental math dan lompatan angka untuk percepatan penjumlahan dasar tanpa jari.',
+    fileName: 'Panduan-Cepat-Tambah-Dasar-Level-3A.pdf',
+    fileType: 'pdf',
+    targetLevel: '3A',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 5,
+    tags: ['Penjumlahan +1 sd +3', 'Mental Math', '3A']
+  },
+  {
+    id: 'file-modul-2a',
+    title: 'Tabel Kuasai Penjumlahan Tambah 4 sampai Tambah 10',
+    description: 'Tabel drill harian penjumlahan 1 digit untuk mencapai standar kecepatan pengerjaan di bawah SCT.',
+    fileName: 'Tabel-Drill-Penjumlahan-Level-2A.pdf',
+    fileType: 'pdf',
+    targetLevel: '2A',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 5,
+    tags: ['Penjumlahan Lanjut', 'SCT Drill', '2A']
+  },
+  {
+    id: 'file-modul-a',
+    title: 'Buku Saku Penjumlahan Bersusun & Pengurangan Dasar',
+    description: 'Metode penjabaran puluhan, satuan, serta dasar konsep pengurangan sebagai kebalikan penjumlahan.',
+    fileName: 'Buku-Saku-Penjumlahan-Pengurangan-Level-A.pdf',
+    fileType: 'pdf',
+    targetLevel: 'A',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 4,
+    tags: ['SD Dasar', 'Pengurangan', 'Level A']
+  },
+  {
+    id: 'file-modul-b',
+    title: 'Panduan Pengurangan Bersusun dengan Teknik Meminjam',
+    description: 'Panduan visual cara meminjam dari nilai tempat puluhan dan ratusan untuk menghindari kekeliruan umum.',
+    fileName: 'Panduan-Teknik-Meminjam-Level-B.pdf',
+    fileType: 'pdf',
+    targetLevel: 'B',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 4,
+    tags: ['Pengurangan Bersusun', 'Teknik Meminjam', 'Level B']
+  },
+  {
+    id: 'file-modul-c',
+    title: 'Trik Cepat Perkalian 1–9 & Pembagian Dasar Tanpa Sisa',
+    description: 'Strategi pola perkalian (pola 9, pola ganda) dan pemahaman pembagian sebagai pembagian kelompok yang adil.',
+    fileName: 'Trik-Cepat-Perkalian-Pembagian-Level-C.pdf',
+    fileType: 'pdf',
+    targetLevel: 'C',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 3,
+    tags: ['Perkalian', 'Pembagian Dasar', 'Level C']
+  },
+  {
+    id: 'file-modul-d',
+    title: 'Panduan Pembagian Bersusun Porogapit & Pecahan Senilai',
+    description: 'Langkah demi langkah porogapit pembagian bilangan 2-3 digit serta cara mereduksi pecahan ke bentuk paling sederhana.',
+    fileName: 'Panduan-Porogapit-Pecahan-Senilai-Level-D.pdf',
+    fileType: 'pdf',
+    targetLevel: 'D',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 3,
+    tags: ['Porogapit', 'Pecahan Senilai', 'Level D']
+  },
+  {
+    id: 'file-modul-e',
+    title: 'Mastery Pecahan: Penjumlahan, Pengurangan & KPK Penyebut',
+    description: 'Rumus ringkas menyamakan penyebut menggunakan KPK serta operasi hitung pecahan campuran.',
+    fileName: 'Modul-Mastery-Pecahan-Level-E.pdf',
+    fileType: 'pdf',
+    targetLevel: 'E',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 2,
+    tags: ['Pecahan Campuran', 'KPK Penyebut', 'Level E']
+  },
+  {
+    id: 'file-modul-f',
+    title: 'Operasi Campuran Pecahan, Desimal & Persentase',
+    description: 'Urutan pengerjaan operasi campuran (tanda kurung, perkalian/pembagian sebelum penjumlahan/pengurangan).',
+    fileName: 'Operasi-Campuran-Pecahan-Desimal-Level-F.pdf',
+    fileType: 'pdf',
+    targetLevel: 'F',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 2,
+    tags: ['Operasi Campuran', 'Desimal', 'Level F']
+  },
+  {
+    id: 'file-modul-g',
+    title: 'Fondasi Aljabar: Bilangan Bulat Negatif & Persamaan Linier Satu Variabel',
+    description: 'Aturan perkalian tanda negatif positif dan sifat kesetaraan aljabar untuk menyelesaikan x + b = c.',
+    fileName: 'Fondasi-Aljabar-Bilangan-Bulat-Level-G.pdf',
+    fileType: 'pdf',
+    targetLevel: 'G',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 2,
+    tags: ['Aljabar Dasar', 'Bilangan Bulat', 'Level G']
+  },
+  {
+    id: 'file-modul-h',
+    title: 'Metode Substitusi & Eliminasi SPLDV serta Persamaan Garis',
+    description: 'Panduan grafis dan aljabar menyelesaikan sistem persamaan linier 2 variabel dan gradien garis lurus.',
+    fileName: 'Metode-SPLDV-Fungsi-Linier-Level-H.pdf',
+    fileType: 'pdf',
+    targetLevel: 'H',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 1,
+    tags: ['SPLDV', 'Eliminasi Substitusi', 'Level H']
+  },
+  {
+    id: 'file-modul-i',
+    title: 'Faktorisasi Polinomial, Akar Kuadrat & Teorema Pythagoras',
+    description: 'Rumus cepat faktorisasi ax^2 + bx + c dan penerapan rumus abc serta panjang sisi segitiga siku-siku.',
+    fileName: 'Faktorisasi-Pythagoras-Level-I.pdf',
+    fileType: 'pdf',
+    targetLevel: 'I',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 1,
+    tags: ['Faktorisasi', 'Pythagoras', 'Level I']
+  },
+  {
+    id: 'file-modul-j',
+    title: 'Aljabar Tingkat Lanjut: Polinomial Tingkat Tinggi & Teorema Sisa',
+    description: 'Metode pembagian Horner, pembagian suku banyak, dan pemfaktoran derajat 3 ke atas.',
+    fileName: 'Aljabar-Lanjut-Horner-Level-J.pdf',
+    fileType: 'pdf',
+    targetLevel: 'J',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 1,
+    tags: ['Polinomial', 'Horner', 'Level J']
+  },
+  {
+    id: 'file-modul-k',
+    title: 'Fungsi Kuadrat, Trigonometri & Irisan Kerucut',
+    description: 'Grafik parabola puncak simetri, nilai perbandingan sinus kosinus tangen, dan lingkaran.',
+    fileName: 'Fungsi-Kuadrat-Trigonometri-Level-K.pdf',
+    fileType: 'pdf',
+    targetLevel: 'K',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 1,
+    tags: ['Trigonometri', 'Fungsi Kuadrat', 'Level K']
+  },
+  {
+    id: 'file-modul-l',
+    title: 'Kalkulus Diferensial: Turunan Fungsi Aljabar & Nilai Ekstrim',
+    description: 'Aturan rantai, turunan perkalian pembagian, uji turunan pertama dan kedua untuk titik stasioner.',
+    fileName: 'Kalkulus-Turunan-Fungsi-Level-L.pdf',
+    fileType: 'pdf',
+    targetLevel: 'L',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 1,
+    tags: ['Diferensial', 'Turunan', 'Level L']
+  },
+  {
+    id: 'file-modul-m',
+    title: 'Kalkulus Integral: Integral Tak Tentu, Tertentu & Luas Daerah',
+    description: 'Metode substitusi aljabar, integral parsial, serta perhitungan luas di bawah kurva fungsi.',
+    fileName: 'Kalkulus-Integral-Luas-Daerah-Level-M.pdf',
+    fileType: 'pdf',
+    targetLevel: 'M',
+    targetWorksheetNum: 1,
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 1,
+    tags: ['Integral', 'Luas Daerah', 'Level M']
+  },
+  {
+    id: 'file-modul-all-peta',
+    title: 'Peta Kurikulum Komprehensif 18 Level AlgoriMath (6A s/d M)',
+    description: 'Peta jalan lengkap pencapaian belajar mandiri, standar waktu pengerjaan (SCT), dan prasyarat kelulusan.',
+    fileName: 'Peta-Kurikulum-AlgoriMath-18-Level.pdf',
+    fileType: 'pdf',
+    targetLevel: 'ALL',
+    uploadedBy: 'Pak GuruAI',
+    uploaderRole: 'admin',
+    uploadedAt: Date.now() - 86400000 * 8,
+    tags: ['Kurikulum', 'Semua Level', 'Peta Jalan']
+  }
+];
+
+export function getStoredUploadedFiles(): UploadedFileItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.UPLOADED_FILES);
+    if (!raw) {
+      // Initialize with default curriculum files
+      localStorage.setItem(STORAGE_KEYS.UPLOADED_FILES, JSON.stringify(DEFAULT_CURRICULUM_FILES));
+      return DEFAULT_CURRICULUM_FILES;
+    }
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed;
+    }
+    return DEFAULT_CURRICULUM_FILES;
+  } catch (e) {
+    console.error('Failed to get stored uploaded files', e);
+    return DEFAULT_CURRICULUM_FILES;
+  }
+}
+
+export function saveStoredUploadedFiles(files: UploadedFileItem[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.UPLOADED_FILES, JSON.stringify(files));
+  } catch (e) {
+    console.error('Failed to save stored uploaded files', e);
+  }
+}
+
+export function addStoredUploadedFile(file: UploadedFileItem): void {
+  try {
+    const current = getStoredUploadedFiles();
+    const filtered = current.filter(f => f.id !== file.id);
+    filtered.unshift(file);
+    saveStoredUploadedFiles(filtered);
+  } catch (e) {
+    console.error('Failed to add stored uploaded file', e);
+  }
+}
+
+export function deleteStoredUploadedFile(id: string): void {
+  try {
+    const current = getStoredUploadedFiles();
+    const updated = current.filter(f => f.id !== id);
+    saveStoredUploadedFiles(updated);
+  } catch (e) {
+    console.error('Failed to delete stored uploaded file', e);
+  }
+}
+
+/**
+ * Filter and categorize files that appear for a student according to:
+ * 1. Hasil Tes Diagnostik (startingLevel)
+ * 2. Level Belajar Terakhir (lastStudiedLevel || currentLevel)
+ */
+export function getStudentRelevantFiles(
+  profile: StudentProfile | null,
+  filesList?: UploadedFileItem[]
+): {
+  diagnosticLevelFiles: UploadedFileItem[];
+  lastStudiedLevelFiles: UploadedFileItem[];
+  recommendedFiles: UploadedFileItem[];
+  allFiles: UploadedFileItem[];
+} {
+  const allFiles = filesList && filesList.length > 0 ? filesList : getStoredUploadedFiles();
+  
+  const diagnosticLevel = profile?.startingLevel || null;
+  const lastStudiedLevel = profile?.lastStudiedLevel || profile?.currentLevel || '6A';
+
+  const diagnosticLevelFiles = diagnosticLevel
+    ? allFiles.filter(f => f.targetLevel === diagnosticLevel)
+    : [];
+
+  const lastStudiedLevelFiles = allFiles.filter(f => f.targetLevel === lastStudiedLevel);
+
+  // Recommended files: match diagnostic level OR match last studied level OR targetLevel is 'ALL'
+  const recommendedFiles = allFiles.filter(f => {
+    if (f.targetLevel === 'ALL') return true;
+    if (diagnosticLevel && f.targetLevel === diagnosticLevel) return true;
+    if (f.targetLevel === lastStudiedLevel) return true;
+    return false;
+  });
+
+  return {
+    diagnosticLevelFiles,
+    lastStudiedLevelFiles,
+    recommendedFiles,
+    allFiles
+  };
+}
+
 

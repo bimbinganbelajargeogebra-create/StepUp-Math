@@ -23,7 +23,8 @@ import {
   UserAccount,
   AccountStatus,
   UnlockedBadge,
-  ReflectionJournalEntry
+  ReflectionJournalEntry,
+  UploadedFileItem
 } from '../types';
 import { 
   getStoredAccounts, 
@@ -33,7 +34,11 @@ import {
   generateCleanLevelProgress,
   getStoredProfile,
   getStoredLevelProgress,
-  getStoredPretestResult
+  getStoredPretestResult,
+  getStoredUploadedFiles,
+  saveStoredUploadedFiles,
+  addStoredUploadedFile,
+  deleteStoredUploadedFile
 } from '../utils/storage';
 
 export interface FirebaseUserData {
@@ -1512,6 +1517,96 @@ export class FirebaseDatabaseService {
     } catch (error) {
       console.error('Database resetAllUserData error:', error);
       return false;
+    }
+  }
+
+  /**
+   * Subscribe to uploaded files and learning materials in real-time
+   */
+  static subscribeToUploadedFiles(
+    onUpdate: (files: UploadedFileItem[]) => void
+  ): Unsubscribe | null {
+    let unsubscribe: Unsubscribe | null = null;
+
+    // Immediately deliver local files first
+    const localFiles = getStoredUploadedFiles();
+    onUpdate(localFiles);
+
+    ensureFirebaseAuth().then(() => {
+      try {
+        const filesCol = collection(db, 'uploadedFiles');
+        unsubscribe = onSnapshot(filesCol, (snapshot) => {
+          if (!snapshot.empty) {
+            const remoteFiles: UploadedFileItem[] = [];
+            snapshot.forEach((d) => {
+              const data = d.data() as UploadedFileItem;
+              remoteFiles.push({
+                ...data,
+                id: d.id || data.id
+              });
+            });
+
+            // Sort newest first
+            remoteFiles.sort((a, b) => (b.uploadedAt || 0) - (a.uploadedAt || 0));
+
+            // Merge with local files so default files stay if not yet in cloud
+            const fileMap = new Map<string, UploadedFileItem>();
+            localFiles.forEach(f => fileMap.set(f.id, f));
+            remoteFiles.forEach(f => fileMap.set(f.id, f));
+
+            const merged = Array.from(fileMap.values()).sort((a, b) => (b.uploadedAt || 0) - (a.uploadedAt || 0));
+            saveStoredUploadedFiles(merged);
+            onUpdate(merged);
+          }
+        }, (err) => {
+          console.warn('Firestore uploadedFiles subscription notice:', err);
+        });
+      } catch (err) {
+        console.warn('Firestore uploadedFiles setup notice:', err);
+      }
+    }).catch(err => {
+      console.warn('FirebaseAuth error during subscribeToUploadedFiles:', err);
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }
+
+  /**
+   * Upload or save a file item to Firebase Firestore and local storage
+   */
+  static async uploadFileItem(file: UploadedFileItem): Promise<boolean> {
+    try {
+      addStoredUploadedFile(file);
+
+      await ensureFirebaseAuth();
+      const fileRef = doc(db, 'uploadedFiles', file.id);
+      await setDoc(fileRef, {
+        ...file,
+        updatedAt: Date.now()
+      });
+      return true;
+    } catch (error) {
+      console.warn('Firestore uploadFileItem notice (saved locally):', error);
+      return true;
+    }
+  }
+
+  /**
+   * Delete an uploaded file from Firestore and local storage
+   */
+  static async deleteFileItem(id: string): Promise<boolean> {
+    try {
+      deleteStoredUploadedFile(id);
+
+      await ensureFirebaseAuth();
+      const fileRef = doc(db, 'uploadedFiles', id);
+      await deleteDoc(fileRef);
+      return true;
+    } catch (error) {
+      console.warn('Firestore deleteFileItem notice (deleted locally):', error);
+      return true;
     }
   }
 
